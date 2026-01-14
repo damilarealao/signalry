@@ -1,0 +1,12 @@
+# Virtual environments
+venv/
+.env
+
+# Python junk
+__pycache__/
+*.pyc
+
+# Secrets / temp files
+smtp.txt
+
+commit & tests.txt

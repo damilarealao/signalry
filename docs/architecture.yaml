@@ -1,0 +1,252 @@
+project: Signalry
+version: 1.2
+philosophy:
+  purpose: "Send emails and know if they were read"
+  data_collection_policy:
+    - no_user_profiling
+    - no_cross_message_correlation
+    - no_behavioral_fingerprinting
+    - minimal_telemetry_only
+    - only collect aggregate validation results for download
+
+plans:
+  free:
+    limits:
+      smtp_accounts: 1
+      rotation_groups: 0
+      daily_send_limit: 500
+      active_campaigns: 3
+      retention_days:
+        logs: 7
+        analytics: 7
+        validation_results: 7
+      queue_priority: low
+    features:
+      uuid_tracking: true
+      read_tracking: true
+      scheduling: false
+      advanced_analytics: false
+      email_validation:
+        single: true
+        bulk: true
+        downloadable_results: true
+  premium:
+    limits:
+      smtp_accounts: unlimited
+      rotation_groups: unlimited
+      daily_send_limit: configurable
+      active_campaigns: unlimited
+      retention_days:
+        logs: 90
+        analytics: 365
+        validation_results: 365
+      queue_priority: high
+    features:
+      uuid_tracking: true
+      read_tracking: true
+      scheduling: true
+      advanced_analytics: true
+      smtp_rotation: true
+      alerts: true
+      email_validation:
+        single: true
+        bulk: true
+        downloadable_results: true
+
+entities:
+  Users:
+    fields:
+      - id
+      - username
+      - password_hash
+      - email
+      - plan
+      - permissions
+      - created_at
+      - updated_at
+    constraints:
+      data_isolation: strict
+      row_level_security: enforced
+
+  SMTPAccounts:
+    fields:
+      - id
+      - user_id
+      - smtp_host
+      - smtp_port
+      - smtp_user
+      - smtp_password_encrypted
+      - rotation_group
+      - status
+      - last_health_check
+      - failure_count
+      - created_at
+      - updated_at
+    rules:
+      auto_disable_on_failure: true
+      cooldown_required: true
+
+  Campaigns:
+    fields:
+      - id
+      - user_id
+      - name
+      - scheduled_at
+      - status
+      - created_at
+      - updated_at
+    safeguards:
+      preflight_validation: true
+      send_rate_limits: enforced
+      dry_run_supported: true
+
+  Messages:
+    fields:
+      - id
+      - campaign_id
+      - uuid
+      - subject
+      - body_plain
+      - body_html
+      - sender_smtp_id
+      - status
+      - retries
+      - sent_at
+      - created_at
+      - updated_at
+    lifecycle:
+      - draft
+      - queued
+      - sent
+      - failed
+      - retried
+
+  MessageOpens:
+    fields:
+      - id
+      - message_id
+      - user_agent_family
+      - ip_hash
+      - opened_at
+      - beacon_pixel_id
+    privacy:
+      ip_storage: hashed
+      user_agent_granularity: coarse
+      correlation: disabled
+
+  DomainChecks:
+    fields:
+      - id
+      - user_id
+      - domain
+      - spf
+      - dkim
+      - dmarc
+      - risk_score
+      - risk_level
+      - last_checked
+      - created_at
+      - updated_at
+    rules:
+      risk_computation: enforced
+      unique_per_user: true
+      retention_based_on_plan: true
+
+  EmailValidationResults:
+    fields:
+      - id
+      - user_id
+      - email
+      - status          # valid, invalid, unknown
+      - domain_type     # free, premium, disposable
+      - created_at
+    privacy:
+      no_ip: true
+      no_timestamp_tracking_per_user: true
+    rules:
+      downloadable_csv: true
+      retention_based_on_plan: true
+      free_vs_premium_limitations: enforced
+
+queues:
+  processor: Celery
+  broker: RabbitMQ
+  types:
+    message_send:
+      timeout: configurable
+      max_retries: configurable
+      backoff_strategy: exponential
+    retry:
+      interval: configurable
+      dead_letter_queue: enabled
+    email_validation:
+      timeout: configurable
+      max_retries: configurable
+  enforcement:
+    plan_based_queue_priority: true
+    rate_limiting: enforced
+
+features:
+  multi_user_isolation: true
+  email_validation:
+    single: true
+    bulk: true
+    downloadable_results: true
+  retry_logic: true
+  timeout_handling: true
+  uuid_tracking: true
+  read_tracking: true
+  queue_processing: true
+  scheduling: true
+
+dashboard:
+  campaign_overview:
+    metrics:
+      - total_sent
+      - total_opened
+      - total_failed
+      - average_reads_per_message
+  smtp_status:
+    metrics:
+      - health_check
+      - rotation_status
+      - failure_rate
+  validation_results:
+    features:
+      - downloadable_csv
+      - aggregated_metrics_only
+  analytics:
+    charts:
+      - message_open_graph
+      - top_campaigns
+    constraints:
+      retention_enforced: true
+      plan_limited: true
+
+security:
+  ssl_tls: required
+  row_level_security: enforced
+  rate_limiting: strict
+  input_validation: mandatory
+  secrets_management: encrypted_at_rest
+
+logging_monitoring:
+  logs:
+    - sending_errors
+    - retries
+    - failed_auth
+    - system_events
+  metrics:
+    - queue_length
+    - retry_rate
+    - delivery_success_rate
+  alerts:
+    - failed_campaign
+    - smtp_unreachable
+    - threshold_exceeded
+
+non_goals:
+  - recipient_profiling
+  - cross_campaign_tracking
+  - behavioral_analysis
+  - ad_tech_integrations
