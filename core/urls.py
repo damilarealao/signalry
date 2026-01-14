@@ -8,5 +8,6 @@ urlpatterns = [
     path("deliverability/", include("deliverability.urls")),
     path("api/", include("analytics.urls")),
     path("api/tracking/", include("tracking.urls")),
+    path("users/", include("users.urls")),
 
 ]

@@ -24,6 +24,9 @@ class CampaignAnalytics(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        verbose_name_plural = "Campaign Analytics"  # ADD THIS LINE
+
     def compute(self):
         msgs = self.campaign.messages.all()
         self.total_messages = msgs.count()
@@ -50,6 +53,9 @@ class UserAnalytics(models.Model):
     emails_checked = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "User Analytics"  # ADD THIS LINE
 
     def compute(self):
         campaigns = getattr(self.user, "campaigns", User.objects.none()).all()

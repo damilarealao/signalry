@@ -4,5 +4,6 @@ from .models import Click
 
 @admin.register(Click)
 class ClickAdmin(admin.ModelAdmin):
-    list_display = ["message", "url", "beacon_uuid", "clicked_at"]
-    search_fields = ["beacon_uuid", "url"]
+    list_display = ['message', 'url', 'beacon_uuid', 'clicked_at']
+    list_filter = ['clicked_at']
+    search_fields = ['message__subject', 'url', 'beacon_uuid']
