@@ -1,0 +1,260 @@
+<!-- templates/core/campaigns/campaign_detail.html -->
+{% extends "core/base.html" %}
+
+{% block title %}{{ campaign.name }} - Signalry{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <a href="{% url 'campaigns:list' %}" class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Campaigns
+        </a>
+        
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">{{ campaign.name }}</h1>
+                <p class="text-gray-600 mt-2">
+                    Campaign ID: {{ campaign.pk }} • Created {{ campaign.created_at|date:"F d, Y" }}
+                </p>
+            </div>
+            
+            <div class="flex space-x-3">
+                <a href="{% url 'campaigns:edit' campaign.pk %}" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium">
+                    <i class="fas fa-edit mr-2"></i> Edit
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- Status Card -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Status</p>
+                    <p class="text-2xl font-semibold text-gray-900 mt-2">
+                        {{ campaign.status|title }}
+                    </p>
+                </div>
+                <div class="text-blue-500">
+                    <i class="fas fa-bullhorn text-2xl"></i>
+                </div>
+            </div>
+            {% if campaign.status in 'draft,active,paused' %}
+            <form method="post" action="{% url 'campaigns:toggle' campaign.pk %}" class="mt-4">
+                {% csrf_token %}
+                <button type="submit" class="text-sm font-medium text-blue-600 hover:text-blue-500">
+                    {% if campaign.status == 'draft' %}Activate Campaign
+                    {% elif campaign.status == 'active' %}Pause Campaign
+                    {% elif campaign.status == 'paused' %}Resume Campaign
+                    {% endif %} →
+                </button>
+            </form>
+            {% endif %}
+        </div>
+        
+        <!-- Schedule Card -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Scheduled For</p>
+                    <p class="text-2xl font-semibold text-gray-900 mt-2">
+                        {% if campaign.scheduled_at %}
+                            {{ campaign.scheduled_at|date:"M d" }}
+                        {% else %}
+                            Not set
+                        {% endif %}
+                    </p>
+                    {% if campaign.scheduled_at %}
+                    <p class="text-sm text-gray-500 mt-1">
+                        {{ campaign.scheduled_at|time:"g:i A" }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="text-green-500">
+                    <i class="fas fa-clock text-2xl"></i>
+                </div>
+            </div>
+            <a href="{% url 'campaigns:edit' campaign.pk %}" class="mt-4 inline-block text-sm font-medium text-blue-600 hover:text-blue-500">
+                Change Schedule →
+            </a>
+        </div>
+        
+        <!-- Created Card -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Created</p>
+                    <p class="text-2xl font-semibold text-gray-900 mt-2">
+                        {{ campaign.created_at|date:"M d" }}
+                    </p>
+                    <p class="text-sm text-gray-500 mt-1">
+                        {{ campaign.created_at|time:"g:i A" }}
+                    </p>
+                </div>
+                <div class="text-purple-500">
+                    <i class="fas fa-calendar-plus text-2xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 text-sm text-gray-500">
+                {{ campaign.created_at|timesince }} ago
+            </div>
+        </div>
+        
+        <!-- Last Updated Card -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Last Updated</p>
+                    <p class="text-2xl font-semibold text-gray-900 mt-2">
+                        {{ campaign.updated_at|date:"M d" }}
+                    </p>
+                    <p class="text-sm text-gray-500 mt-1">
+                        {{ campaign.updated_at|time:"g:i A" }}
+                    </p>
+                </div>
+                <div class="text-yellow-500">
+                    <i class="fas fa-sync-alt text-2xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 text-sm text-gray-500">
+                {{ campaign.updated_at|timesince }} ago
+            </div>
+        </div>
+    </div>
+    
+    <!-- Campaign Details -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column - Campaign Information -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Campaign Overview -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Campaign Overview</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">Description</h3>
+                        <p class="text-gray-600">
+                            This is a basic campaign setup. To send emails, you'll need to:
+                        </p>
+                        <ol class="mt-2 text-gray-600 space-y-2">
+                            <li class="flex items-start">
+                                <span class="inline-block w-6 h-6 bg-blue-100 text-blue-800 rounded-full text-center mr-2">1</span>
+                                <span>Add email content and templates</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="inline-block w-6 h-6 bg-green-100 text-green-800 rounded-full text-center mr-2">2</span>
+                                <span>Configure recipient lists</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="inline-block w-6 h-6 bg-purple-100 text-purple-800 rounded-full text-center mr-2">3</span>
+                                <span>Set up sending options</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="inline-block w-6 h-6 bg-yellow-100 text-yellow-800 rounded-full text-center mr-2">4</span>
+                                <span>Preview and test before sending</span>
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <a href="{% url 'campaigns:edit' campaign.pk %}" class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center hover:bg-blue-100 transition-colors">
+                        <div class="text-blue-600 mb-2">
+                            <i class="fas fa-edit text-2xl"></i>
+                        </div>
+                        <p class="font-medium text-gray-700">Edit Settings</p>
+                    </a>
+                    
+                    <form method="post" action="{% url 'campaigns:duplicate' campaign.pk %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full bg-purple-50 border border-purple-200 rounded-lg p-4 text-center hover:bg-purple-100 transition-colors">
+                            <div class="text-purple-600 mb-2">
+                                <i class="fas fa-copy text-2xl"></i>
+                            </div>
+                            <p class="font-medium text-gray-700">Duplicate</p>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column - Status & Timeline -->
+        <div class="space-y-6">
+            <!-- Status Timeline -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Campaign Timeline</h2>
+                
+                <div class="space-y-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 mr-3">
+                            <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                                <i class="fas fa-plus text-green-600"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-700">Created</p>
+                            <p class="text-sm text-gray-600 mt-1">{{ campaign.created_at|date:"F d, Y g:i A" }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if campaign.scheduled_at %}
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 mr-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                <i class="fas fa-clock text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-700">Scheduled</p>
+                            <p class="text-sm text-gray-600 mt-1">{{ campaign.scheduled_at|date:"F d, Y g:i A" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 mr-3">
+                            <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                                <i class="fas fa-sync-alt text-purple-600"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-700">Last Updated</p>
+                            <p class="text-sm text-gray-600 mt-1">{{ campaign.updated_at|date:"F d, Y g:i A" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Campaign ID Card -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Technical Information</h2>
+                
+                <div class="space-y-3">
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">Campaign ID</p>
+                        <p class="text-lg font-bold text-gray-900">{{ campaign.pk }}</p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">Database ID</p>
+                        <p class="text-lg font-bold text-gray-900">{{ campaign.id }}</p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">User</p>
+                        <p class="text-gray-900">{{ campaign.user.email }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -6,6 +6,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.views.generic import TemplateView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Count, Sum, Q
 
 from .forms import UserRegistrationForm, CustomAuthenticationForm, ProfileUpdateForm
 
@@ -96,31 +97,87 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         # User info
         context['user'] = user
         
+        # Calculate SMTP account statistics
+        try:
+            from smtp.models import SMTPAccount
+            context['active_smtp_count'] = user.smtp_accounts.filter(status='active').count()
+        except (ImportError, AttributeError):
+            context['active_smtp_count'] = 0
+        
+        # Calculate campaign statistics
+        try:
+            from campaigns.models import Campaign
+            campaigns = user.campaigns.all()
+            context['active_campaigns_count'] = campaigns.filter(status='active').count()
+            context['draft_campaigns_count'] = campaigns.filter(status='draft').count()
+            context['paused_campaigns_count'] = campaigns.filter(status='paused').count()
+            context['total_campaigns'] = campaigns.count()
+        except (ImportError, AttributeError):
+            context['active_campaigns_count'] = 0
+            context['draft_campaigns_count'] = 0
+            context['paused_campaigns_count'] = 0
+            context['total_campaigns'] = 0
+        
         # Try to get user analytics
         try:
             from analytics.models import UserAnalytics
             context['user_analytics'] = user.analytics
-        except:
-            context['user_analytics'] = None
+        except (ImportError, AttributeError):
+            # Create a default analytics dictionary
+            context['user_analytics'] = {
+                'total_campaigns': context.get('total_campaigns', 0),
+                'total_messages': 0,
+                'active_smtp_accounts': context.get('active_smtp_count', 0),
+            }
         
         # Try to get current plan
         try:
             from plans.models import Plan
             context['current_plan'] = user.current_plan
-        except:
+        except (ImportError, AttributeError):
             context['current_plan'] = None
         
         # Try to get recent campaigns
         try:
-            context['campaigns'] = user.campaigns.all()[:5]
-        except:
-            context['campaigns'] = []
+            context['recent_campaigns'] = user.campaigns.all().order_by('-created_at')[:3]
+        except (AttributeError, ImportError):
+            context['recent_campaigns'] = []
+        
+        # Try to get recent SMTP accounts
+        try:
+            context['recent_smtp_accounts'] = user.smtp_accounts.all().order_by('-created_at')[:3]
+        except (AttributeError, ImportError):
+            context['recent_smtp_accounts'] = []
         
         # Try to get recent alerts
         try:
-            context['alerts'] = user.alerts.filter(is_resolved=False)[:5]
-        except:
+            context['alerts'] = user.alerts.filter(is_resolved=False).order_by('-created_at')[:5]
+        except (AttributeError, ImportError):
             context['alerts'] = []
+        
+        # Calculate total messages sent (check if Campaign has messages relationship)
+        total_messages = 0
+        try:
+            from campaigns.models import Campaign
+            # Check if Campaign model has a messages relationship
+            campaigns_with_messages = Campaign.objects.filter(user=user)
+            for campaign in campaigns_with_messages:
+                # Try different possible field names for messages count
+                if hasattr(campaign, 'messages'):
+                    total_messages += campaign.messages.count()
+                elif hasattr(campaign, 'email_messages'):
+                    total_messages += campaign.email_messages.count()
+                elif hasattr(campaign, 'sent_messages'):
+                    total_messages += campaign.sent_messages.count()
+        except (ImportError, AttributeError):
+            pass
+        
+        # Update analytics with total messages
+        if 'user_analytics' in context:
+            if isinstance(context['user_analytics'], dict):
+                context['user_analytics']['total_messages'] = total_messages
+            elif hasattr(context['user_analytics'], 'total_messages'):
+                context['user_analytics'].total_messages = total_messages
         
         return context
 
@@ -175,14 +232,14 @@ class ProfileEditView(LoginRequiredMixin, View):
         try:
             from analytics.models import UserAnalytics
             context['user_analytics'] = user.analytics
-        except:
+        except (ImportError, AttributeError):
             context['user_analytics'] = None
         
         # Try to get current plan
         try:
             from plans.models import Plan
             context['current_plan'] = user.current_plan
-        except:
+        except (ImportError, AttributeError):
             context['current_plan'] = None
         
         return context

@@ -18,4 +18,6 @@ urlpatterns = [
     path("deliverability/", include("deliverability.urls")),
     
     path('smtp/', include('smtp.urls')),
+    
+    path('campaigns/', include('campaigns.urls')),
 ]

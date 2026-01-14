@@ -1,0 +1,172 @@
+<!-- templates/core/campaigns/campaign_create.html -->
+{% extends "core/base.html" %}
+
+{% block title %}Create Campaign - Signalry{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <a href="{% url 'campaigns:list' %}" class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Campaigns
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900">Create New Campaign</h1>
+        <p class="text-gray-600 mt-2">Set up your email campaign settings</p>
+    </div>
+    
+    <!-- Form Card -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <form method="post" action="{% url 'campaigns:create' %}">
+            {% csrf_token %}
+            
+            <!-- Campaign Name -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+                    <i class="fas fa-bullhorn mr-2 text-blue-600"></i> Campaign Details
+                </h3>
+                
+                <div>
+                    <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Campaign Name *
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500">
+                        Give your campaign a descriptive name for easy identification.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Schedule Settings -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+                    <i class="fas fa-clock mr-2 text-green-600"></i> Schedule
+                </h3>
+                
+                <div class="space-y-4">
+                    <!-- Schedule Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            When do you want to send this campaign?
+                        </label>
+                        {{ form.schedule_type }}
+                        {% if form.schedule_type.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.schedule_type.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Schedule Date/Time (hidden by default) -->
+                    <div id="schedule-fields" class="space-y-4 {% if form.schedule_type.initial != 'later' %}hidden{% endif %}">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Date -->
+                            <div>
+                                <label for="{{ form.scheduled_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Date *
+                                </label>
+                                {{ form.scheduled_date }}
+                                {% if form.scheduled_date.errors %}
+                                    <p class="mt-1 text-sm text-red-600">{{ form.scheduled_date.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Time -->
+                            <div>
+                                <label for="{{ form.scheduled_time.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Time *
+                                </label>
+                                {{ form.scheduled_time }}
+                                {% if form.scheduled_time.errors %}
+                                    <p class="mt-1 text-sm text-red-600">{{ form.scheduled_time.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form Errors -->
+            {% if form.non_field_errors %}
+                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+                    {% for error in form.non_field_errors %}
+                        <p class="text-red-600 text-sm">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 pt-6 border-t">
+                <a href="{% url 'campaigns:list' %}" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium">
+                    Cancel
+                </a>
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 font-medium">
+                    <i class="fas fa-save mr-2"></i> Create Campaign
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Help Card -->
+    <div class="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-question-circle text-blue-600 mr-2"></i> Campaign Tips
+        </h3>
+        
+        <div class="space-y-4">
+            <div>
+                <h4 class="font-medium text-gray-900 mb-1">Campaign Name</h4>
+                <p class="text-sm text-gray-600">
+                    Choose a name that clearly identifies the campaign purpose. 
+                    Good examples: "Welcome Email Series", "Black Friday Sale", "Monthly Newsletter"
+                </p>
+            </div>
+            
+            <div>
+                <h4 class="font-medium text-gray-900 mb-1">Scheduling</h4>
+                <p class="text-sm text-gray-600">
+                    • <strong>Send Now:</strong> Campaign will be queued for immediate sending (5 minutes)<br>
+                    • <strong>Schedule Later:</strong> Set a specific date and time for sending
+                </p>
+            </div>
+            
+            <div>
+                <h4 class="font-medium text-gray-900 mb-1">Next Steps</h4>
+                <p class="text-sm text-gray-600">
+                    After creating the campaign, you'll be able to:
+                    1. Add email content and templates
+                    2. Set up recipient lists
+                    3. Configure sending options
+                    4. Preview and test before sending
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const scheduleTypeRadios = document.querySelectorAll('input[name="schedule_type"]');
+    const scheduleFields = document.getElementById('schedule-fields');
+    
+    function toggleScheduleFields() {
+        const selectedValue = document.querySelector('input[name="schedule_type"]:checked').value;
+        if (selectedValue === 'later') {
+            scheduleFields.classList.remove('hidden');
+        } else {
+            scheduleFields.classList.add('hidden');
+        }
+    }
+    
+    // Initial state
+    toggleScheduleFields();
+    
+    // Add change listeners
+    scheduleTypeRadios.forEach(radio => {
+        radio.addEventListener('change', toggleScheduleFields);
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}
