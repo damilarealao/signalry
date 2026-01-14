@@ -1,5 +1,4 @@
 # monitoring/tests.py
-
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from campaigns.models import Campaign
@@ -48,6 +47,7 @@ class MonitoringSmokeTest(TestCase):
         self.assertEqual(log.level, "info")
         self.assertEqual(log.user, self.user)
         self.assertEqual(log.campaign, self.campaign)
+        self.assertEqual(log.smtp_account, self.smtp)
         self.assertIn("Test log", log.message)
 
     # -------------------- Metric Test --------------------
@@ -78,3 +78,6 @@ class MonitoringSmokeTest(TestCase):
         alert.mark_resolved()
         alert.refresh_from_db()
         self.assertTrue(alert.is_resolved)
+        self.assertEqual(alert.user, self.user)
+        self.assertEqual(alert.campaign, self.campaign)
+        self.assertEqual(alert.smtp_account, self.smtp)

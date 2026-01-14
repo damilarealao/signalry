@@ -9,6 +9,7 @@ from plans.models import Plan
 from campaigns.models import Campaign
 from .models import Message, MessageOpen
 import hashlib
+from rest_framework.test import APIClient
 
 
 class MessageBeaconTests(TestCase):
@@ -59,6 +60,9 @@ class MessageBeaconTests(TestCase):
             body_html="<p>Hello</p>",
             sender_smtp=self.smtp_account,
         )
+
+        # API client for beacon endpoint
+        self.client = APIClient()
 
     # -------------------- Message Tests --------------------
     def test_creation_without_campaign_raises_error(self):

@@ -2,6 +2,7 @@
 from django.test import TestCase
 from .models import User
 from django.contrib.auth.models import Group, Permission
+from plans.models import Plan
 
 class UserModelTests(TestCase):
 
@@ -36,9 +37,13 @@ class UserModelTests(TestCase):
         user.user_permissions.add(perm)
         self.assertIn(perm, user.user_permissions.all())
 
-    def test_is_premium_flag(self):
-        user = User.objects.create_user(email="premium@test.com", password="pass123", is_premium=True)
-        self.assertTrue(user.is_premium)
+    def test_premium_plan_assignment(self):
+        # Assign a plan to the user
+        user = User.objects.create_user(email="premium@test.com", password="pass123")
+        Plan.objects.create_plan_for_user(user, "premium")
+        plan = user.plans.first()
+        self.assertIsNotNone(plan)
+        self.assertEqual(plan.plan_type, "premium")  # updated from plan.name -> plan.plan_type
 
     def test_str_method(self):
         user = User.objects.create_user(email="str@test.com", password="pass123")

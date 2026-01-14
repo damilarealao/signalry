@@ -32,7 +32,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=255, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    is_premium = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
     # Avoid clashes with default auth.User
@@ -58,3 +57,21 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+    # ---------------- Plan Helpers ----------------
+    @property
+    def current_plan(self):
+        """
+        Returns the latest Plan instance assigned to the user.
+        Returns None if no plan exists.
+        """
+        return self.plans.last()  # 'plans' is the related_name in Plan model
+
+    @property
+    def plan_type(self):
+        """
+        Returns the plan_type of the user's latest plan.
+        Defaults to 'free' if no plan is assigned.
+        """
+        plan = self.current_plan
+        return plan.plan_type if plan else "free"

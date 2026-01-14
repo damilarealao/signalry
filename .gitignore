@@ -9,4 +9,8 @@ __pycache__/
 # Secrets / temp files
 smtp.txt
 
+checks.yml
+
 commit & tests.txt
+
+mapping.txt

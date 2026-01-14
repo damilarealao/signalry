@@ -1,4 +1,5 @@
 # campaigns/models.py
+
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -12,16 +13,20 @@ STATUS_CHOICES = [
     ("failed", "Failed"),
 ]
 
-class CampaignManager(models.Manager):
 
+class CampaignManager(models.Manager):
     def create_campaign(self, user, name, scheduled_at=None, status="draft"):
         """
         Create a campaign while enforcing the user's plan limits.
         Draft status by default. Raises ValidationError if limit exceeded.
         """
-        # Count draft + active campaigns toward the plan limit
-        plan_limit = Plan.objects.get_limits(getattr(user.plan, "plan_type", "free"))["active_campaigns"]
+        # Use the user's current plan property; fallback to free if none
+        user_plan = getattr(user, "current_plan", None)
+        plan_type = getattr(user_plan, "plan_type", "free") if user_plan else "free"
+        plan_limit = Plan.objects.get_limits(plan_type)["active_campaigns"]
+
         if plan_limit is not None:
+            # Count draft + active campaigns toward the plan limit
             active_count = user.campaigns.filter(status__in=["draft", "active"]).count()
             if active_count >= plan_limit:
                 raise ValidationError(
