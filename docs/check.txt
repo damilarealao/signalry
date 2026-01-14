@@ -1,0 +1,47 @@
+core/
+├── templates/
+│   └── core/
+│       ├── base.html                ✓ DONE
+│       ├── index.html               ✓ DONE
+│       ├── dashboard.html           ✓ DONE
+│       ├── login.html               ✓ DONE
+│       ├── register.html            ✓ DONE
+│       ├── users/                   
+│       │   └── profile_edit.html    ✓ DONE
+│       │
+│       ├── plans/                   🔄 TODO
+│       │   ├── pricing.html         # Pricing plans page
+│       │   └── billing.html         # Billing management
+│       │
+│       ├── smtp/                    🔄 TODO
+│       │   ├── smtp_list.html       # List SMTP accounts
+│       │   ├── smtp_add.html        # Add new SMTP
+│       │   └── smtp_edit.html       # Edit SMTP account
+│       │
+│       ├── campaigns/               🔄 TODO
+│       │   ├── campaign_list.html   # All campaigns
+│       │   ├── campaign_create.html # Create campaign
+│       │   └── campaign_detail.html # Single campaign stats
+│       │
+│       ├── messages/                🔄 TODO
+│       │   ├── compose.html         # Compose email
+│       │   ├── templates.html       # Email templates
+│       │   └── sent.html            # Sent messages
+│       │
+│       ├── deliverability/          🔄 TODO
+│       │   ├── domain_check.html    # Domain health
+│       │   └── email_check.html     # Email validation
+│       │
+│       ├── analytics/               🔄 TODO
+│       │   └── overview.html        # Analytics dashboard
+│       │
+│       ├── settings/                🔄 TODO
+│       │   ├── account.html         # Account settings
+│       │   └── notifications.html   # Notification settings
+│       │
+│       └── components/              🔄 TODO
+│           ├── sidebar.html         # Navigation sidebar
+│           ├── header.html          # Page header
+│           └── modals/              # Reusable modals
+│               ├── confirm.html     # Confirm dialog
+│               └── alert.html       # Alert modal

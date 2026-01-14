@@ -1,4 +1,4 @@
-#smtp/models.py
+# smtp/models.py
 
 import smtplib
 from email.mime.text import MIMEText
@@ -9,6 +9,9 @@ from django.core.exceptions import ValidationError
 from core.encryption import encrypt, decrypt
 from users.models import User
 import random
+import logging
+
+logger = logging.getLogger(__name__)
 
 STATUS_CHOICES = [
     ("active", "Active"),
@@ -95,7 +98,13 @@ class SMTPAccountManager(models.Manager):
 
             server = smtplib.SMTP(smtp_account.smtp_host, smtp_account.smtp_port, timeout=10)
             server.starttls()
-            server.login(smtp_account.smtp_user, smtp_account.get_password())
+            
+            # Get password with error handling
+            password = smtp_account.get_password()
+            if not password:
+                raise ValidationError(f"SMTP account {smtp_account.smtp_user} has invalid credentials")
+                
+            server.login(smtp_account.smtp_user, password)
             server.sendmail(smtp_account.smtp_user, to_email, msg.as_string())
             server.quit()
 
@@ -103,7 +112,8 @@ class SMTPAccountManager(models.Manager):
             smtp_account.reset_failures()
             return True
 
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to send email using SMTP account {smtp_account.id}: {e}")
             smtp_account.mark_failure()
             raise
 
@@ -123,7 +133,21 @@ class SMTPAccount(models.Model):
     objects = SMTPAccountManager()
 
     def get_password(self):
-        return decrypt(self.smtp_password_encrypted)
+        """Get decrypted password with error handling."""
+        try:
+            password = decrypt(self.smtp_password_encrypted)
+            if not password:
+                # Password decryption returned empty string
+                logger.warning(f"Empty password after decryption for SMTP account {self.id}")
+                self.status = "failed"
+                self.save(update_fields=["status"])
+            return password
+        except Exception as e:
+            # Log the error and mark account as failed
+            logger.error(f"Failed to decrypt password for SMTP account {self.id}: {e}")
+            self.status = "failed"
+            self.save(update_fields=["status"])
+            return ""
 
     def mark_failure(self):
         """Increment failure counter and auto-disable if needed."""
@@ -138,6 +162,29 @@ class SMTPAccount(models.Model):
         self.status = "active"
         self.last_health_check = timezone.now()
         self.save(update_fields=["failure_count", "status", "last_health_check"])
+    
+    def test_connection(self):
+        """Test the SMTP connection with current credentials."""
+        try:
+            password = self.get_password()
+            if not password:
+                return False, "Invalid credentials (decryption failed)"
+            
+            server = smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=10)
+            server.starttls()
+            server.login(self.smtp_user, password)
+            server.quit()
+            self.reset_failures()
+            return True, "Connection successful"
+        except smtplib.SMTPAuthenticationError:
+            self.mark_failure()
+            return False, "Authentication failed"
+        except smtplib.SMTPException as e:
+            self.mark_failure()
+            return False, f"SMTP error: {str(e)}"
+        except Exception as e:
+            self.mark_failure()
+            return False, f"Connection error: {str(e)}"
 
     def __str__(self):
         return f"{self.smtp_user}@{self.smtp_host} ({self.status})"

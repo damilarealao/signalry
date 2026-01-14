@@ -1,0 +1,288 @@
+<!-- templates/core/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Signalry - Email Marketing Platform{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSRF Token for AJAX -->
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    
+    {% block extra_head %}{% endblock %}
+    
+    <style>
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+        .hover-scale:hover {
+            transform: translateY(-2px);
+        }
+        /* Mobile menu toggle */
+        .mobile-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .mobile-menu.open {
+            max-height: 500px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <a href="{% url 'users:index' %}" class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center">
+                            <i class="fas fa-paper-plane text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-800">Signalry</span>
+                    </a>
+                </div>
+
+                <!-- Mobile menu button -->
+                <div class="flex items-center md:hidden">
+                    <button type="button" onclick="toggleMobileMenu()" 
+                            class="text-gray-600 hover:text-gray-900 focus:outline-none">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Desktop Navigation Links -->
+                <div class="hidden md:flex items-center space-x-6">
+                    {% if user.is_authenticated %}
+                        <!-- Dashboard -->
+                        <a href="{% url 'users:dashboard' %}" class="text-gray-600 hover:text-blue-600 transition-colors">
+                            <i class="fas fa-chart-line mr-1"></i> Dashboard
+                        </a>
+                        
+                        <!-- SMTP (NEW) -->
+                        <a href="{% url 'smtp:list' %}" class="text-gray-600 hover:text-blue-600 transition-colors">
+                            <i class="fas fa-server mr-1"></i> SMTP
+                        </a>
+                        
+                        <!-- Profile -->
+                        <a href="{% url 'users:profile_edit' %}" class="text-gray-600 hover:text-blue-600 transition-colors">
+                            <i class="fas fa-user mr-1"></i> Profile
+                        </a>
+                        
+                        <!-- User Info & Logout -->
+                        <div class="flex items-center space-x-3">
+                            <span class="text-gray-500 text-sm hidden lg:block">
+                                <i class="fas fa-user-circle mr-1"></i> {{ user.get_display_name }}
+                            </span>
+                            <a href="{% url 'users:logout' %}" class="bg-red-50 text-red-600 px-4 py-2 rounded-md text-sm hover:bg-red-100 transition-colors">
+                                <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                            </a>
+                        </div>
+                    {% else %}
+                        <!-- Public Navigation -->
+                        <a href="{% url 'users:index' %}#features" class="text-gray-600 hover:text-blue-600 transition-colors">
+                            Features
+                        </a>
+                        <a href="{% url 'users:index' %}#pricing" class="text-gray-600 hover:text-blue-600 transition-colors">
+                            Pricing
+                        </a>
+                        <a href="{% url 'users:login' %}" class="text-gray-600 hover:text-blue-600 transition-colors">
+                            <i class="fas fa-sign-in-alt mr-1"></i> Login
+                        </a>
+                        <a href="{% url 'users:register' %}" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-user-plus mr-1"></i> Sign Up
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Mobile Navigation Menu -->
+            <div id="mobileMenu" class="mobile-menu md:hidden bg-white border-t">
+                <div class="px-2 pt-2 pb-3 space-y-1">
+                    {% if user.is_authenticated %}
+                        <!-- Mobile Menu for Authenticated Users -->
+                        <a href="{% url 'users:dashboard' %}" 
+                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
+                            <i class="fas fa-chart-line mr-2"></i> Dashboard
+                        </a>
+                        
+                        <a href="{% url 'smtp:list' %}" 
+                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
+                            <i class="fas fa-server mr-2"></i> SMTP Accounts
+                        </a>
+                        
+                        <a href="{% url 'users:profile_edit' %}" 
+                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
+                            <i class="fas fa-user mr-2"></i> Profile
+                        </a>
+                        
+                        <div class="px-3 py-2 text-sm text-gray-500 border-t">
+                            <i class="fas fa-user-circle mr-2"></i> {{ user.get_display_name }}
+                        </div>
+                        
+                        <a href="{% url 'users:logout' %}" 
+                           class="block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                        </a>
+                    {% else %}
+                        <!-- Mobile Menu for Public Users -->
+                        <a href="{% url 'users:index' %}#features" 
+                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
+                            Features
+                        </a>
+                        <a href="{% url 'users:index' %}#pricing" 
+                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
+                            Pricing
+                        </a>
+                        <a href="{% url 'users:login' %}" 
+                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
+                            <i class="fas fa-sign-in-alt mr-2"></i> Login
+                        </a>
+                        <a href="{% url 'users:register' %}" 
+                           class="block px-3 py-2 rounded-md text-base font-medium text-white bg-blue-600 hover:bg-blue-700">
+                            <i class="fas fa-user-plus mr-2"></i> Sign Up
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            {% for message in messages %}
+                <div class="rounded-md p-4 mb-4 border-l-4 
+                    {% if message.tags == 'success' %}bg-green-50 text-green-800 border-green-500
+                    {% elif message.tags == 'error' %}bg-red-50 text-red-800 border-red-500
+                    {% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-800 border-yellow-500
+                    {% else %}bg-blue-50 text-blue-800 border-blue-500{% endif %}">
+                    <div class="flex">
+                        <div class="flex-shrink-0 pt-1">
+                            {% if message.tags == 'success' %}
+                                <i class="fas fa-check-circle text-green-500"></i>
+                            {% elif message.tags == 'error' %}
+                                <i class="fas fa-exclamation-circle text-red-500"></i>
+                            {% elif message.tags == 'warning' %}
+                                <i class="fas fa-exclamation-triangle text-yellow-500"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle text-blue-500"></i>
+                            {% endif %}
+                        </div>
+                        <div class="ml-3">
+                            <p class="font-medium">{{ message }}</p>
+                        </div>
+                        <div class="ml-auto pl-3">
+                            <button onclick="this.parentElement.parentElement.style.display='none'" 
+                                    class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="flex-grow">
+        {% block content %}
+        <!-- Page content goes here -->
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                            <i class="fas fa-paper-plane text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold">Signalry</span>
+                    </div>
+                    <p class="text-gray-400">
+                        Professional email marketing platform for businesses of all sizes.
+                    </p>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Product</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">API</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Company</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">About</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Legal</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Terms</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">GDPR</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400 text-sm">
+                <p>&copy; {% now "Y" %} Signalry. All rights reserved.</p>
+                <p class="mt-2">Professional email delivery for businesses</p>
+            </div>
+        </div>
+    </footer>
+
+    {% block extra_js %}
+    <script>
+        // Mobile menu toggle function
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('open');
+        }
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('mobileMenu');
+            const button = document.querySelector('[onclick="toggleMobileMenu()"]');
+            
+            if (!menu.contains(event.target) && !button.contains(event.target)) {
+                menu.classList.remove('open');
+            }
+        });
+
+        // Auto-hide messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const messages = document.querySelectorAll('.rounded-md.p-4.mb-4');
+            messages.forEach(function(message) {
+                setTimeout(function() {
+                    message.style.transition = 'opacity 0.5s ease';
+                    message.style.opacity = '0';
+                    setTimeout(function() {
+                        if (message.parentNode) {
+                            message.parentNode.removeChild(message);
+                        }
+                    }, 500);
+                }, 5000);
+            });
+        });
+    </script>
+    {% endblock %}
+</body>
+</html>

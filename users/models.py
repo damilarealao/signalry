@@ -57,6 +57,23 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+    
+    def get_display_name(self):
+        """
+        Get display name for greetings - use full_name if available, 
+        otherwise email prefix.
+        
+        Returns:
+            str: Display name for the user
+        """
+        if self.full_name and self.full_name.strip():
+            return self.full_name.strip()
+        
+        # Fallback to email username (part before @)
+        if '@' in self.email:
+            return self.email.split('@')[0]
+        
+        return self.email
 
     # ---------------- Plan Helpers ----------------
     @property
