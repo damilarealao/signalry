@@ -1,0 +1,242 @@
+<!-- templates/core/message_system/contactgroup_list.html -->
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Contact Groups - Signalry{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Contact Groups</h1>
+                <p class="text-gray-600 mt-2">Organize your contacts into groups for targeted messaging</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'message_system:contact_list' %}" 
+                   class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 font-medium">
+                    <i class="fas fa-users mr-2"></i> All Contacts
+                </a>
+                <a href="{% url 'message_system:contactgroup_create' %}" 
+                   class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium">
+                    <i class="fas fa-plus mr-2"></i> New Group
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 mr-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-layer-group text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Groups</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ groups|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 mr-4">
+                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                        <i class="fas fa-user-friends text-green-600 text-xl"></i>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Static Contacts</p>
+                    <p class="text-2xl font-semibold text-gray-900" id="static-contacts">-</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 mr-4">
+                    <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                        <i class="fas fa-robot text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Dynamic Contacts</p>
+                    <p class="text-2xl font-semibold text-gray-900" id="dynamic-contacts">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Groups Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for group in groups %}
+        <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow hover-scale">
+            <div class="p-6">
+                <!-- Group Header -->
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <div class="flex items-center mb-2">
+                            <div class="w-10 h-10 rounded-full {% if group.is_dynamic %}bg-purple-100{% else %}bg-blue-100{% endif %} flex items-center justify-center mr-3">
+                                <i class="{% if group.is_dynamic %}fas fa-robot text-purple-600{% else %}fas fa-layer-group text-blue-600{% endif %}"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ group.name }}</h3>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
+                                    {% if group.is_dynamic %}bg-purple-100 text-purple-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                    {% if group.is_dynamic %}Dynamic{% else %}Static{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <a href="{% url 'message_system:contactgroup_edit' group.pk %}" 
+                           class="text-green-600 hover:text-green-800">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'message_system:contactgroup_delete' group.pk %}" 
+                           class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Group Description -->
+                {% if group.description %}
+                <p class="text-gray-600 text-sm mb-4">{{ group.description }}</p>
+                {% endif %}
+                
+                <!-- Group Stats -->
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                    <div class="text-center">
+                        <p class="text-2xl font-bold text-gray-900">{{ group.contact_count }}</p>
+                        <p class="text-xs text-gray-500">Contacts</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-2xl font-bold text-gray-900">{{ group.subscribed_count }}</p>
+                        <p class="text-xs text-gray-500">Subscribed</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-2xl font-bold text-gray-900">{{ group.open_rate|default:"-" }}%</p>
+                        <p class="text-xs text-gray-500">Open Rate</p>
+                    </div>
+                </div>
+                
+                <!-- Group Tags Preview -->
+                {% if group.filter_criteria and group.is_dynamic %}
+                <div class="mb-4">
+                    <p class="text-xs font-medium text-gray-500 mb-1">Filter Criteria:</p>
+                    <div class="flex flex-wrap gap-1">
+                        {% for filter_item in group.filter_criteria_preview %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                            {{ filter_item }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Actions -->
+                <div class="flex space-x-2 pt-4 border-t">
+                    <a href="{% url 'message_system:contactgroup_detail' group.pk %}" 
+                       class="flex-1 text-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-medium">
+                        View Details
+                    </a>
+                    <a href="{% url 'campaigns:create' %}?group={{ group.pk }}" 
+                       class="flex-1 text-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 font-medium">
+                        Send to Group
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="md:col-span-2 lg:col-span-3">
+            <div class="bg-white rounded-lg shadow text-center py-12">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                    <i class="fas fa-layer-group text-gray-400 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">No Contact Groups Yet</h3>
+                <p class="text-gray-600 mb-6 max-w-md mx-auto">
+                    Create your first contact group to organize your contacts and send targeted messages.
+                </p>
+                <a href="{% url 'message_system:contactgroup_create' %}" 
+                   class="inline-flex items-center bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 font-medium">
+                    <i class="fas fa-plus mr-2"></i> Create Your First Group
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Info Cards -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                <i class="fas fa-layer-group text-blue-600 mr-2"></i>
+                Static Groups
+            </h3>
+            <p class="text-gray-600 mb-4">
+                Static groups contain manually added contacts. You have full control over which contacts belong to these groups.
+            </p>
+            <ul class="text-sm text-gray-600 space-y-2">
+                <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mt-0.5 mr-2"></i>
+                    <span>Manually add or remove contacts</span>
+                </li>
+                <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mt-0.5 mr-2"></i>
+                    <span>Direct control over membership</span>
+                </li>
+                <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mt-0.5 mr-2"></i>
+                    <span>Ideal for segmentation by behavior or preference</span>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                <i class="fas fa-robot text-purple-600 mr-2"></i>
+                Dynamic Groups
+            </h3>
+            <p class="text-gray-600 mb-4">
+                Dynamic groups automatically update based on filter criteria. Contacts are added or removed automatically as they meet your conditions.
+            </p>
+            <ul class="text-sm text-gray-600 space-y-2">
+                <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mt-0.5 mr-2"></i>
+                    <span>Automatically updated based on criteria</span>
+                </li>
+                <li class="fas fa-check text-green-500 mt-0.5 mr-2"></i>
+                    <span>Perfect for segmentation by attributes (status, tags, etc.)</span>
+                </li>
+                <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mt-0.5 mr-2"></i>
+                    <span>Saves time on manual contact management</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calculate statistics
+    let staticContacts = 0;
+    let dynamicContacts = 0;
+    
+    {% for group in groups %}
+        {% if group.is_dynamic %}
+            dynamicContacts += {{ group.contact_count|default:0 }};
+        {% else %}
+            staticContacts += {{ group.contact_count|default:0 }};
+        {% endif %}
+    {% endfor %}
+    
+    document.getElementById('static-contacts').textContent = staticContacts.toLocaleString();
+    document.getElementById('dynamic-contacts').textContent = dynamicContacts.toLocaleString();
+});
+</script>
+{% endblock %}

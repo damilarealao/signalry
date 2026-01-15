@@ -1,0 +1,144 @@
+<!-- templates/core/message_system/unsubscribe.html -->
+{% extends "core/base.html" %}
+
+{% block title %}{% if success %}Unsubscribed - Signalry{% else %}Unsubscribe Confirmation - Signalry{% endif %}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="flex justify-center">
+            <a href="{% url 'users:index' %}" class="flex items-center space-x-2">
+                <div class="w-10 h-10 bg-blue-600 rounded-md flex items-center justify-center">
+                    <i class="fas fa-paper-plane text-white"></i>
+                </div>
+                <span class="text-2xl font-bold text-gray-900">Signalry</span>
+            </a>
+        </div>
+        
+        <div class="mt-8 bg-white py-8 px-4 shadow-lg rounded-lg sm:px-10">
+            {% if success %}
+                <!-- Success Message -->
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                        <i class="fas fa-check text-green-600 text-2xl"></i>
+                    </div>
+                    
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                        Successfully Unsubscribed
+                    </h2>
+                    
+                    <p class="text-gray-600 mb-6">
+                        <strong>{{ contact.email }}</strong> has been removed from all future email campaigns.
+                    </p>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                        <p class="text-sm text-gray-500">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            You will no longer receive emails from Signalry campaigns.
+                        </p>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <a href="{% url 'users:index' %}" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <i class="fas fa-home mr-2"></i> Back to Home
+                        </a>
+                        
+                        <p class="text-xs text-gray-400 mt-4">
+                            This change takes effect immediately. You can close this window.
+                        </p>
+                    </div>
+                </div>
+                
+            {% elif error %}
+                <!-- Error Message -->
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+                    </div>
+                    
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                        Unsubscribe Failed
+                    </h2>
+                    
+                    <p class="text-gray-600 mb-6">
+                        {{ error }}
+                    </p>
+                    
+                    <a href="{% url 'users:index' %}" 
+                       class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i class="fas fa-home mr-2"></i> Back to Home
+                    </a>
+                </div>
+                
+            {% else %}
+                <!-- Confirmation Form -->
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
+                        <i class="fas fa-envelope text-yellow-600 text-2xl"></i>
+                    </div>
+                    
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                        Unsubscribe Confirmation
+                    </h2>
+                    
+                    <p class="text-gray-600 mb-2">
+                        You're about to unsubscribe:
+                    </p>
+                    <p class="text-lg font-semibold text-gray-800 mb-6">
+                        {{ contact.email }}
+                    </p>
+                    
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 text-left">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-yellow-700">
+                                    This will stop all future emails from Signalry campaigns.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        
+                        <div>
+                            <button type="submit" 
+                                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                <i class="fas fa-ban mr-2"></i> Yes, Unsubscribe Me
+                            </button>
+                        </div>
+                        
+                        <div class="text-center">
+                            <a href="javascript:history.back()" 
+                               class="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-arrow-left mr-1"></i> No, keep me subscribed
+                            </a>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-8 pt-6 border-t border-gray-200">
+                        <p class="text-xs text-gray-500">
+                            <i class="fas fa-shield-alt mr-1"></i>
+                            This unsubscribe request is for <strong>{{ contact.email }}</strong> only.
+                            If you're receiving emails for a different address, please use the unsubscribe link in those emails.
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="mt-8 text-center">
+            <p class="text-sm text-gray-500">
+                Need help? <a href="mailto:support@signalry.com" class="font-medium text-blue-600 hover:text-blue-500">Contact support</a>
+            </p>
+            <p class="text-xs text-gray-400 mt-2">
+                © {% now "Y" %} Signalry. All rights reserved.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

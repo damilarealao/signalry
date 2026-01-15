@@ -1,0 +1,11 @@
+asgiref==3.11.0
+cffi==2.0.0
+cryptography==46.0.3
+Django==5.2.10
+django-extensions==4.1
+djangorestframework==3.16.1
+dnspython==2.8.0
+gunicorn==23.0.0
+packaging==25.0
+pycparser==2.23
+sqlparse==0.5.5

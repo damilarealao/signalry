@@ -1,0 +1,399 @@
+<!-- core/templates/core/message_system/contactgroup_form.html -->
+{% extends "core/base.html" %}
+
+{% block title %}{% if form.instance.pk %}Edit Group - Signalry{% else %}Create New Group - Signalry{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Back button and title -->
+    <div class="mb-6">
+        <a href="{% if form.instance.pk %}{% url 'message_system:contactgroup_detail' pk=form.instance.pk %}{% else %}{% url 'message_system:contactgroup_list' %}{% endif %}" 
+           class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4">
+            <i class="fas fa-arrow-left mr-2"></i> Back
+        </a>
+        
+        <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-900">
+                {% if form.instance.pk %}
+                    <i class="fas fa-users mr-2 text-blue-600"></i> Edit Group
+                {% else %}
+                    <i class="fas fa-plus-circle mr-2 text-blue-600"></i> Create New Group
+                {% endif %}
+            </h1>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">
+                {% if form.instance.pk %}
+                    Update group details
+                {% else %}
+                    Create a new contact group
+                {% endif %}
+            </h2>
+            <p class="mt-1 text-sm text-gray-600">
+                Groups help you organize your contacts for targeted campaigns.
+            </p>
+        </div>
+        
+        <form method="post" id="group-form" class="px-6 py-6">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-circle text-red-400 mt-1"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Please fix the following errors:</h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <ul class="list-disc pl-5 space-y-1">
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Basic Information -->
+            <div class="space-y-6">
+                <!-- Name Field -->
+                <div>
+                    <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        Group Name <span class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-1">
+                        <input type="text" 
+                               name="{{ form.name.name }}" 
+                               id="{{ form.name.id_for_label }}" 
+                               value="{{ form.name.value|default_if_none:'' }}" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="e.g., VIP Customers, Newsletter Subscribers"
+                               required>
+                    </div>
+                    {% if form.name.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500">Give your group a descriptive name.</p>
+                </div>
+
+                <!-- Description Field -->
+                <div>
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                    </label>
+                    <div class="mt-1">
+                        <textarea name="{{ form.description.name }}" 
+                                  id="{{ form.description.id_for_label }}" 
+                                  rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="Describe the purpose of this group...">{{ form.description.value|default_if_none:'' }}</textarea>
+                    </div>
+                    {% if form.description.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Dynamic Group Toggle -->
+                <div class="border-t border-gray-200 pt-6">
+                    <div class="flex items-start">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" 
+                                   name="{{ form.is_dynamic.name }}" 
+                                   id="{{ form.is_dynamic.id_for_label }}" 
+                                   {% if form.is_dynamic.value %}checked{% endif %}
+                                   class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        </div>
+                        <div class="ml-3">
+                            <label for="{{ form.is_dynamic.id_for_label }}" class="text-sm font-medium text-gray-700">
+                                Dynamic Group
+                            </label>
+                            <p class="text-sm text-gray-500">
+                                Automatically include contacts based on rules. When disabled, you'll add contacts manually.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Filter Rules Section -->
+                <div id="dynamic-filters-section" 
+                     class="border border-gray-200 rounded-lg p-4 bg-gray-50 {% if not form.is_dynamic.value and not form.is_bound %}hidden{% endif %}">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-filter text-blue-600 mr-2"></i>
+                        <h3 class="text-sm font-medium text-gray-900">Dynamic Filter Rules</h3>
+                    </div>
+                    
+                    <div id="filter-rules">
+                        <!-- Rules will be added here via JavaScript -->
+                        <div id="no-rules-message" class="text-center py-4 text-gray-500">
+                            <i class="fas fa-sliders-h text-2xl mb-2 block"></i>
+                            <p>No rules added yet. Add rules to automatically filter contacts.</p>
+                        </div>
+                    </div>
+                    
+                    <button type="button" 
+                            id="add-filter-rule" 
+                            class="mt-4 inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i class="fas fa-plus mr-2"></i> Add Filter Rule
+                    </button>
+                    
+                    <p class="mt-2 text-xs text-gray-500">
+                        <i class="fas fa-info-circle mr-1"></i> Contacts matching ALL rules will be automatically added to this group.
+                    </p>
+                </div>
+
+                <!-- Tags Field -->
+                <div>
+                    <label for="{{ form.tags.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        Tags
+                    </label>
+                    <div class="mt-1">
+                        <input type="text" 
+                               name="{{ form.tags.name }}" 
+                               id="{{ form.tags.id_for_label }}" 
+                               value="{{ form.tags.value|default_if_none:'' }}" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="e.g., marketing, sales, support (comma separated)">
+                    </div>
+                    {% if form.tags.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.tags.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500">Add tags to help organize your groups.</p>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="mt-8 pt-6 border-t border-gray-200 flex justify-end space-x-3">
+                <a href="{% if form.instance.pk %}{% url 'message_system:contactgroup_detail' pk=form.instance.pk %}{% else %}{% url 'message_system:contactgroup_list' %}{% endif %}" 
+                   class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {% if form.instance.pk %}
+                        <i class="fas fa-save mr-2"></i> Update Group
+                    {% else %}
+                        <i class="fas fa-plus mr-2"></i> Create Group
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Help Card -->
+    {% if not form.instance.pk %}
+    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-lightbulb text-blue-400 text-lg"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">About Dynamic Groups</h3>
+                <div class="mt-2 text-sm text-blue-700">
+                    <p class="mb-2"><strong>Dynamic Groups</strong> automatically include contacts that match your rules.</p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>Contacts are added/removed automatically when they match your criteria</li>
+                        <li>Great for segmentation based on contact properties</li>
+                        <li>Rules are evaluated whenever contacts are updated</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isDynamicCheckbox = document.querySelector('#{{ form.is_dynamic.id_for_label }}');
+    const dynamicFiltersSection = document.querySelector('#dynamic-filters-section');
+    const noRulesMessage = document.querySelector('#no-rules-message');
+    
+    // Toggle dynamic filters section
+    function toggleDynamicFilters() {
+        if (isDynamicCheckbox.checked) {
+            dynamicFiltersSection.classList.remove('hidden');
+        } else {
+            dynamicFiltersSection.classList.add('hidden');
+        }
+    }
+    
+    if (isDynamicCheckbox && dynamicFiltersSection) {
+        isDynamicCheckbox.addEventListener('change', toggleDynamicFilters);
+        toggleDynamicFilters(); // Initial check
+    }
+    
+    // Filter rule management
+    const addFilterButton = document.querySelector('#add-filter-rule');
+    const filterRulesContainer = document.querySelector('#filter-rules');
+    
+    if (addFilterButton && filterRulesContainer) {
+        let filterCount = 0;
+        
+        function addFilterRule(field = 'status', operator = 'equals', value = '') {
+            filterCount++;
+            
+            // Hide no rules message
+            if (noRulesMessage) {
+                noRulesMessage.style.display = 'none';
+            }
+            
+            const ruleId = `filter_rule_${filterCount}`;
+            const ruleDiv = document.createElement('div');
+            ruleDiv.className = 'filter-rule bg-white border border-gray-200 rounded-md p-4 mb-3';
+            ruleDiv.id = ruleId;
+            
+            ruleDiv.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-medium text-gray-700">
+                        <i class="fas fa-filter mr-2 text-blue-500"></i>Rule ${filterCount}
+                    </span>
+                    <button type="button" 
+                            onclick="removeFilterRule('${ruleId}')" 
+                            class="text-gray-400 hover:text-red-500">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Field</label>
+                        <select name="filter_field_${filterCount}" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="status" ${field === 'status' ? 'selected' : ''}>Status</option>
+                            <option value="company" ${field === 'company' ? 'selected' : ''}>Company</option>
+                            <option value="tags" ${field === 'tags' ? 'selected' : ''}>Tags</option>
+                            <option value="created_at" ${field === 'created_at' ? 'selected' : ''}>Created Date</option>
+                            <option value="country" ${field === 'country' ? 'selected' : ''}>Country</option>
+                            <option value="city" ${field === 'city' ? 'selected' : ''}>City</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Operator</label>
+                        <select name="filter_operator_${filterCount}" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="equals" ${operator === 'equals' ? 'selected' : ''}>equals</option>
+                            <option value="contains" ${operator === 'contains' ? 'selected' : ''}>contains</option>
+                            <option value="starts_with" ${operator === 'starts_with' ? 'selected' : ''}>starts with</option>
+                            <option value="ends_with" ${operator === 'ends_with' ? 'selected' : ''}>ends with</option>
+                            <option value="not_equals" ${operator === 'not_equals' ? 'selected' : ''}>not equals</option>
+                            <option value="is_empty" ${operator === 'is_empty' ? 'selected' : ''}>is empty</option>
+                            <option value="is_not_empty" ${operator === 'is_not_empty' ? 'selected' : ''}>is not empty</option>
+                            <option value="gt" ${operator === 'gt' ? 'selected' : ''}>greater than</option>
+                            <option value="lt" ${operator === 'lt' ? 'selected' : ''}>less than</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Value</label>
+                        <input type="text" 
+                               name="filter_value_${filterCount}" 
+                               value="${value}"
+                               placeholder="Enter value..." 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    <i class="fas fa-info-circle mr-1"></i>Contacts where <span class="font-medium field-name">status</span> 
+                    <span class="font-medium operator-text">equals</span> "<span class="font-medium value-text">${value}</span>"
+                </div>
+            `;
+            
+            filterRulesContainer.appendChild(ruleDiv);
+            
+            // Add change listeners to update the description
+            const fieldSelect = ruleDiv.querySelector(`[name="filter_field_${filterCount}"]`);
+            const operatorSelect = ruleDiv.querySelector(`[name="filter_operator_${filterCount}"]`);
+            const valueInput = ruleDiv.querySelector(`[name="filter_value_${filterCount}"]`);
+            
+            function updateDescription() {
+                const fieldName = fieldSelect.options[fieldSelect.selectedIndex].text;
+                const operatorText = operatorSelect.options[operatorSelect.selectedIndex].text;
+                const valueText = valueInput.value || '[empty]';
+                
+                ruleDiv.querySelector('.field-name').textContent = fieldName.toLowerCase();
+                ruleDiv.querySelector('.operator-text').textContent = operatorText;
+                ruleDiv.querySelector('.value-text').textContent = valueText;
+            }
+            
+            fieldSelect.addEventListener('change', updateDescription);
+            operatorSelect.addEventListener('change', updateDescription);
+            valueInput.addEventListener('input', updateDescription);
+            
+            // Initial description update
+            updateDescription();
+        }
+        
+        // Add initial rule button click handler
+        addFilterButton.addEventListener('click', function() {
+            addFilterRule();
+        });
+        
+        // Add existing rules if any (for edit mode)
+        // You can populate this from your form data if needed
+        {% if form.instance.pk and form.instance.filter_rules %}
+            // Parse and add existing rules (you'll need to implement this based on your model)
+            // Example: addFilterRule('status', 'equals', 'subscribed');
+        {% endif %}
+    }
+});
+
+// Function to remove filter rule
+function removeFilterRule(ruleId) {
+    const ruleDiv = document.getElementById(ruleId);
+    if (ruleDiv) {
+        ruleDiv.remove();
+        
+        // Show no rules message if no rules left
+        const filterRulesContainer = document.querySelector('#filter-rules');
+        if (filterRulesContainer && filterRulesContainer.children.length === 1) {
+            const noRulesMessage = document.querySelector('#no-rules-message');
+            if (noRulesMessage) {
+                noRulesMessage.style.display = 'block';
+            }
+        }
+    }
+}
+
+// Form submission validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('#group-form');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            const nameField = document.querySelector('#{{ form.name.id_for_label }}');
+            if (nameField && !nameField.value.trim()) {
+                event.preventDefault();
+                nameField.focus();
+                
+                // Add error styling
+                nameField.classList.add('border-red-500');
+                
+                // Show error message
+                let errorDiv = nameField.parentNode.querySelector('.error-message');
+                if (!errorDiv) {
+                    errorDiv = document.createElement('p');
+                    errorDiv.className = 'mt-1 text-sm text-red-600 error-message';
+                    nameField.parentNode.appendChild(errorDiv);
+                }
+                errorDiv.textContent = 'Group name is required.';
+                
+                // Remove error styling on input
+                nameField.addEventListener('input', function() {
+                    this.classList.remove('border-red-500');
+                    const errorMsg = this.parentNode.querySelector('.error-message');
+                    if (errorMsg) {
+                        errorMsg.remove();
+                    }
+                }, { once: true });
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

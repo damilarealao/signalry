@@ -1,0 +1,322 @@
+<!-- templates/core/message_system/contact_import.html -->
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Import Contacts - Signalry{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Import Contacts</h1>
+                <p class="text-gray-600 mt-2">Upload a CSV file to import multiple contacts at once</p>
+            </div>
+            <a href="{% url 'message_system:contact_list' %}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 font-medium">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Contacts
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Import Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">Upload CSV File</h2>
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="mb-4 p-4 border-l-4 border-red-500 bg-red-50">
+                            {% for error in form.non_field_errors %}
+                            <p class="text-red-700">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="space-y-6">
+                            <!-- File Upload -->
+                            <div>
+                                <label for="{{ form.csv_file.id_for_label }}" 
+                                       class="block text-sm font-medium text-gray-700 mb-2">
+                                    CSV File *
+                                </label>
+                                
+                                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-500 transition-colors">
+                                    <div class="space-y-1 text-center">
+                                        <i class="fas fa-file-csv text-gray-400 text-4xl mx-auto"></i>
+                                        <div class="flex text-sm text-gray-600">
+                                            <label for="{{ form.csv_file.id_for_label }}" 
+                                                   class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                                <span>Upload a file</span>
+                                                <input type="file" 
+                                                       name="{{ form.csv_file.name }}" 
+                                                       id="{{ form.csv_file.id_for_label }}"
+                                                       accept=".csv"
+                                                       class="sr-only"
+                                                       required>
+                                            </label>
+                                            <p class="pl-1">or drag and drop</p>
+                                        </div>
+                                        <p class="text-xs text-gray-500">CSV files up to 5MB</p>
+                                        {% if form.csv_file.value %}
+                                        <p class="text-sm text-green-600">
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                            {{ form.csv_file.value.name }}
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                {% if form.csv_file.errors %}
+                                <p class="mt-2 text-sm text-red-600">{{ form.csv_file.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Import Options -->
+                            <div class="border-t pt-6">
+                                <h3 class="text-lg font-medium text-gray-800 mb-4">Import Options</h3>
+                                
+                                <div class="space-y-4">
+                                    <div class="flex items-start">
+                                        <div class="flex items-center h-5">
+                                            <input type="checkbox" 
+                                                   id="skip_duplicates" 
+                                                   name="skip_duplicates" 
+                                                   checked
+                                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                        </div>
+                                        <div class="ml-3 text-sm">
+                                            <label for="skip_duplicates" class="font-medium text-gray-700">
+                                                Skip duplicate emails
+                                            </label>
+                                            <p class="text-gray-500">
+                                                If a contact with the same email already exists, skip it instead of updating.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-start">
+                                        <div class="flex items-center h-5">
+                                            <input type="checkbox" 
+                                                   id="set_subscribed" 
+                                                   name="set_subscribed" 
+                                                   checked
+                                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                        </div>
+                                        <div class="ml-3 text-sm">
+                                            <label for="set_subscribed" class="font-medium text-gray-700">
+                                                Set imported contacts as "Subscribed"
+                                            </label>
+                                            <p class="text-gray-500">
+                                                All imported contacts will be marked as subscribed by default.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-start">
+                                        <div class="flex items-center h-5">
+                                            <input type="checkbox" 
+                                                   id="send_welcome" 
+                                                   name="send_welcome"
+                                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                        </div>
+                                        <div class="ml-3 text-sm">
+                                            <label for="send_welcome" class="font-medium text-gray-700">
+                                                Send welcome email to new contacts
+                                            </label>
+                                            <p class="text-gray-500">
+                                                Send a welcome email to contacts who are imported as subscribed.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Group Assignment -->
+                                    <div>
+                                        <label for="group_id" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Add to Contact Group (Optional)
+                                        </label>
+                                        <select name="group_id" 
+                                                id="group_id"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <option value="">-- Select Group --</option>
+                                            {% for group in contact_groups %}
+                                            <option value="{{ group.id }}">{{ group.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <p class="mt-1 text-xs text-gray-500">
+                                            All imported contacts will be added to the selected group.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Form Actions -->
+                            <div class="pt-6 border-t">
+                                <div class="flex justify-end space-x-4">
+                                    <a href="{% url 'message_system:contact_list' %}" 
+                                       class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 font-medium">
+                                        Cancel
+                                    </a>
+                                    <button type="submit" 
+                                            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">
+                                        <i class="fas fa-upload mr-2"></i> Import Contacts
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Instructions -->
+        <div>
+            <div class="bg-white rounded-lg shadow sticky top-6">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">CSV Format</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-medium text-gray-700 mb-2">Required Columns</h3>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    <code class="bg-gray-100 px-1 rounded">email</code>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-medium text-gray-700 mb-2">Optional Columns</h3>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li><code class="bg-gray-100 px-1 rounded">first_name</code></li>
+                                <li><code class="bg-gray-100 px-1 rounded">last_name</code></li>
+                                <li><code class="bg-gray-100 px-1 rounded">phone</code></li>
+                                <li><code class="bg-gray-100 px-1 rounded">company</code></li>
+                                <li><code class="bg-gray-100 px-1 rounded">notes</code></li>
+                                <li><code class="bg-gray-100 px-1 rounded">tags</code> (comma-separated)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="border-t pt-4">
+                            <h3 class="font-medium text-gray-700 mb-2">Example CSV</h3>
+                            <div class="bg-gray-50 rounded p-3 text-xs font-mono overflow-x-auto">
+                                <pre>email,first_name,last_name,company,tags
+john@example.com,John,Doe,Acme Inc.,customer,vip
+jane@example.com,Jane,Smith,,"newsletter,prospect"
+bob@example.com,Bob,Johnson,Startup Co.,partner</pre>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t pt-4">
+                            <h3 class="font-medium text-gray-700 mb-2">Tips</h3>
+                            <ul class="text-sm text-gray-600 space-y-2">
+                                <li class="flex items-start">
+                                    <i class="fas fa-lightbulb text-yellow-500 mt-1 mr-2"></i>
+                                    <span>Make sure the CSV file has a header row with column names</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-lightbulb text-yellow-500 mt-1 mr-2"></i>
+                                    <span>Use UTF-8 encoding for special characters</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-lightbulb text-yellow-500 mt-1 mr-2"></i>
+                                    <span>You can import up to 10,000 contacts at once</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-lightbulb text-yellow-500 mt-1 mr-2"></i>
+                                    <span>Use double quotes for values containing commas</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="border-t pt-4">
+                            <a href="{% static 'sample-contacts.csv' %}" 
+                               class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                <i class="fas fa-download mr-2"></i>
+                                Download Sample CSV
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // File upload preview
+    const fileInput = document.getElementById('{{ form.csv_file.id_for_label }}');
+    const dropZone = document.querySelector('.border-dashed');
+    
+    fileInput.addEventListener('change', function(e) {
+        if (this.files.length > 0) {
+            const fileName = this.files[0].name;
+            const fileSize = (this.files[0].size / 1024 / 1024).toFixed(2); // MB
+            
+            // Update UI
+            const uploadZone = dropZone.querySelector('.space-y-1');
+            uploadZone.innerHTML = `
+                <i class="fas fa-file-csv text-green-400 text-4xl mx-auto"></i>
+                <div class="text-sm text-gray-600">
+                    <p class="font-medium">${fileName}</p>
+                    <p class="text-xs text-gray-500">${fileSize} MB</p>
+                </div>
+                <button type="button" id="remove-file" class="text-red-600 text-sm hover:text-red-800">
+                    Remove file
+                </button>
+            `;
+            
+            // Add remove file functionality
+            document.getElementById('remove-file').addEventListener('click', function() {
+                fileInput.value = '';
+                location.reload();
+            });
+        }
+    });
+    
+    // Drag and drop functionality
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+        dropZone.classList.add('border-blue-500', 'bg-blue-50');
+    }
+    
+    function unhighlight() {
+        dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+    }
+    
+    dropZone.addEventListener('drop', function(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0 && files[0].name.endsWith('.csv')) {
+            fileInput.files = files;
+            fileInput.dispatchEvent(new Event('change'));
+        } else {
+            alert('Please drop a CSV file.');
+        }
+    }, false);
+});
+</script>
+{% endblock %}

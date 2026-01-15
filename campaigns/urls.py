@@ -12,4 +12,7 @@ urlpatterns = [
     path('<int:pk>/delete/', views.CampaignDeleteView.as_view(), name='delete'),
     path('<int:pk>/duplicate/', views.CampaignDuplicateView.as_view(), name='duplicate'),
     path('<int:pk>/toggle/', views.CampaignToggleStatusView.as_view(), name='toggle'),
+    path('<int:pk>/send-now/', views.CampaignSendNowView.as_view(), name='send_now'),
+    path('<int:pk>/pause/', views.CampaignPauseView.as_view(), name='pause'),
+    path('<int:pk>/resume/', views.CampaignResumeView.as_view(), name='resume'),
 ]

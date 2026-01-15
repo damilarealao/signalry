@@ -1,4 +1,4 @@
-# core/urls.py - FIXED VERSION
+# core/urls.py
 from django.contrib import admin
 from django.urls import path, include
 
@@ -10,7 +10,8 @@ urlpatterns = [
     path("", include("users.urls")),
     
     # API Endpoints
-    path("api/messages/", include("message_system.urls")),
+    path("api/messages/", include("message_system.urls")),  # This includes unsubscribe
+    
     path("api/analytics/", include("analytics.urls")),
     path("api/tracking/", include("tracking.urls")),
     

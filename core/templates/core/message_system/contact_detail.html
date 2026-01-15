@@ -1,0 +1,476 @@
+<!-- templates/core/message_system/contact_detail.html -->
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}{{ contact.email }} - Signalry{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex justify-between items-start">
+            <div>
+                <div class="flex items-center mb-2">
+                    <a href="{% url 'message_system:contact_list' %}" 
+                       class="text-gray-600 hover:text-blue-600 mr-3">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        {% if contact.get_full_name %}
+                            {{ contact.get_full_name }}
+                        {% else %}
+                            {{ contact.email }}
+                        {% endif %}
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-600">{{ contact.email }}</span>
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full 
+                        {% if contact.status == 'subscribed' and contact.is_active %}bg-green-100 text-green-800
+                        {% elif contact.status == 'subscribed' and not contact.is_active %}bg-yellow-100 text-yellow-800
+                        {% elif contact.status == 'unsubscribed' %}bg-gray-100 text-gray-800
+                        {% elif contact.status == 'bounced' %}bg-red-100 text-red-800
+                        {% elif contact.status == 'complaint' %}bg-orange-100 text-orange-800
+                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                        {% if contact.status == 'subscribed' and not contact.is_active %}Subscribed (Inactive)
+                        {% else %}{{ contact.get_status_display }}{% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'message_system:contact_edit' contact.pk %}" 
+                   class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium">
+                    <i class="fas fa-edit mr-2"></i> Edit
+                </a>
+                <button type="button" 
+                        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
+                        onclick="alert('This feature will be implemented soon!')">
+                    <i class="fas fa-paper-plane mr-2"></i> Send Email
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column: Contact Details -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Contact Information Card -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">Contact Information</h2>
+                    
+                    <div class="space-y-4">
+                        <!-- Basic Info -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Email</p>
+                                <p class="mt-1 text-gray-900">{{ contact.email }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Status</p>
+                                <p class="mt-1">
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full 
+                                        {% if contact.status == 'subscribed' and contact.is_active %}bg-green-100 text-green-800
+                                        {% elif contact.status == 'subscribed' and not contact.is_active %}bg-yellow-100 text-yellow-800
+                                        {% elif contact.status == 'unsubscribed' %}bg-gray-100 text-gray-800
+                                        {% elif contact.status == 'bounced' %}bg-red-100 text-red-800
+                                        {% elif contact.status == 'complaint' %}bg-orange-100 text-orange-800
+                                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                        {% if contact.status == 'subscribed' and not contact.is_active %}Subscribed (Inactive)
+                                        {% else %}{{ contact.get_status_display }}{% endif %}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Personal Info -->
+                        {% if contact.first_name or contact.last_name or contact.phone or contact.company %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {% if contact.first_name %}
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">First Name</p>
+                                <p class="mt-1 text-gray-900">{{ contact.first_name }}</p>
+                            </div>
+                            {% endif %}
+                            
+                            {% if contact.last_name %}
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Last Name</p>
+                                <p class="mt-1 text-gray-900">{{ contact.last_name }}</p>
+                            </div>
+                            {% endif %}
+                            
+                            {% if contact.phone %}
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Phone</p>
+                                <p class="mt-1 text-gray-900">{{ contact.phone }}</p>
+                            </div>
+                            {% endif %}
+                            
+                            {% if contact.company %}
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Company</p>
+                                <p class="mt-1 text-gray-900">{{ contact.company }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Tags -->
+                        {% if contact.tags %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 mb-2">Tags</p>
+                            <div class="flex flex-wrap gap-2">
+                                {% for tag in contact.tags.split|slice:":10" %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ tag|slice:":20" }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Groups -->
+                        {% if groups %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 mb-2">Contact Groups</p>
+                            <div class="flex flex-wrap gap-2">
+                                {% for group in groups %}
+                                <a href="{% url 'message_system:contactgroup_detail' group.pk %}" 
+                                   class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200">
+                                    {{ group.name }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Notes -->
+                        {% if contact.notes %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 mb-2">Notes</p>
+                            <div class="bg-gray-50 rounded p-4">
+                                <p class="text-gray-700 whitespace-pre-line">{{ contact.notes|truncatechars:200 }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Metadata -->
+                        <div class="pt-4 border-t text-sm text-gray-500">
+                            <div class="flex justify-between">
+                                <div>
+                                    <p>Created: {{ contact.created_at|date:"M d, Y H:i" }}</p>
+                                    {% if contact.updated_at != contact.created_at %}
+                                    <p class="mt-1">Updated: {{ contact.updated_at|date:"M d, Y H:i" }}</p>
+                                    {% endif %}
+                                    {% if contact.unsubscribed_at %}
+                                    <p class="mt-1 text-red-600">Unsubscribed: {{ contact.unsubscribed_at|date:"M d, Y H:i" }}</p>
+                                    {% endif %}
+                                </div>
+                                {% if contact.last_contacted_at %}
+                                <div class="text-right">
+                                    <p>Last Contacted: {{ contact.last_contacted_at|date:"M d, Y H:i" }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message History Card -->
+            <div class="bg-white rounded-lg shadow" id="message-history">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">Message History</h2>
+                    
+                    {% if message_history %}
+                    <div class="space-y-4">
+                        {% for recipient in message_history %}
+                        <div class="border border-gray-200 rounded p-4 hover:bg-gray-50">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <p class="font-medium text-gray-900">
+                                        {% if recipient.message.campaign %}
+                                            {{ recipient.message.campaign.name|truncatechars:40 }}
+                                        {% else %}
+                                            Single Message
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-sm text-gray-500">{{ recipient.message.subject|truncatechars:50 }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm text-gray-500">{{ recipient.created_at|date:"M d, Y H:i" }}</p>
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full 
+                                        {% if recipient.status == 'sent' %}bg-green-100 text-green-800
+                                        {% elif recipient.status == 'delivered' %}bg-blue-100 text-blue-800
+                                        {% elif recipient.status == 'bounced' %}bg-red-100 text-red-800
+                                        {% elif recipient.status == 'complaint' %}bg-orange-100 text-orange-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ recipient.get_status_display }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-4 text-sm text-gray-600">
+                                <div class="flex items-center">
+                                    <i class="fas fa-envelope-open mr-1 text-green-600"></i>
+                                    <span>Opened: {{ recipient.open_count }} times</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-mouse-pointer mr-1 text-blue-600"></i>
+                                    <span>Clicks: {{ recipient.click_count }}</span>
+                                </div>
+                                {% if recipient.bounce_reason %}
+                                <div class="text-red-600">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>
+                                    <span>{{ recipient.bounce_reason|truncatechars:30 }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        {% if message_history|length >= 10 %}
+                        <div class="text-center pt-4">
+                            <a href="#" 
+                               class="text-blue-600 hover:text-blue-800 font-medium">
+                                View All Messages
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8">
+                        <div class="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-4">
+                            <i class="fas fa-envelope text-gray-400"></i>
+                        </div>
+                        <p class="text-gray-500">No messages sent to this contact yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Stats and Actions -->
+        <div class="space-y-6">
+            <!-- Stats Card -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">Engagement Stats</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Total Messages</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ message_history|length }}</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Total Opens</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ open_count }}</p>
+                            {% if message_history|length > 0 %}
+                            <p class="text-sm text-gray-500">
+                                {% widthratio open_count message_history|length 100 as open_rate %}
+                                {{ open_rate }}% open rate
+                            </p>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Total Clicks</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ click_count }}</p>
+                            {% if open_count > 0 %}
+                            <p class="text-sm text-gray-500">
+                                {% widthratio click_count open_count 100 as click_rate %}
+                                {{ click_rate }}% click rate
+                            </p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="pt-4 border-t">
+                            <p class="text-sm font-medium text-gray-500 mb-2">Engagement Score</p>
+                            <div class="flex items-center">
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div class="bg-blue-600 h-2.5 rounded-full" 
+                                         style="width: {% if open_count > 0 %}75{% else %}25{% endif %}%"></div>
+                                </div>
+                                <span class="ml-2 text-sm font-medium text-gray-700">
+                                    {% if open_count > 0 %}High{% else %}Low{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">Quick Actions</h2>
+                    
+                    <div class="space-y-3">
+                        <!-- FIXED: Check BOTH status AND is_active -->
+                        {% if contact.status == 'subscribed' and contact.is_active %}
+                        <form method="post" action="{% url 'message_system:contact_unsubscribe' contact.pk %}" class="block">
+                            {% csrf_token %}
+                            <button type="submit" 
+                                    class="w-full flex items-center justify-between px-4 py-2 bg-red-50 text-red-700 rounded-md hover:bg-red-100 font-medium"
+                                    onclick="return confirm('Are you sure you want to unsubscribe this contact? They will no longer receive emails from you.')">
+                                <span>Unsubscribe Contact</span>
+                                <i class="fas fa-ban"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'message_system:contact_resubscribe' contact.pk %}" class="block">
+                            {% csrf_token %}
+                            <button type="submit" 
+                                    class="w-full flex items-center justify-between px-4 py-2 bg-green-50 text-green-700 rounded-md hover:bg-green-100 font-medium"
+                                    onclick="return confirm('Are you sure you want to resubscribe this contact? They will start receiving emails from you again.')">
+                                <span>Resubscribe Contact</span>
+                                <i class="fas fa-check-circle"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        <a href="{% url 'message_system:contact_edit' contact.pk %}" 
+                           class="flex items-center justify-between px-4 py-2 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 font-medium">
+                            <span>Edit Contact</span>
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        
+                        <a href="{% url 'message_system:contact_delete' contact.pk %}" 
+                           class="flex items-center justify-between px-4 py-2 bg-red-50 text-red-700 rounded-md hover:bg-red-100 font-medium"
+                           onclick="return confirm('Are you sure you want to delete this contact? This action cannot be undone.')">
+                            <span>Delete Contact</span>
+                            <i class="fas fa-trash"></i>
+                        </a>
+                        
+                        <!-- Add Export Contact button if needed -->
+                        {% if False %}  <!-- Temporarily disabled -->
+                        <button type="button" 
+                                class="w-full flex items-center justify-between px-4 py-2 bg-purple-50 text-purple-700 rounded-md hover:bg-purple-100 font-medium"
+                                onclick="alert('Export feature coming soon!')">
+                            <span>Export Contact Data</span>
+                            <i class="fas fa-download"></i>
+                        </button>
+                        {% endif %}
+                        
+                        <!-- Add to Campaign button -->
+                        <a href="{% url 'campaigns:create' %}?contact_id={{ contact.pk }}" 
+                           class="flex items-center justify-between px-4 py-2 bg-indigo-50 text-indigo-700 rounded-md hover:bg-indigo-100 font-medium">
+                            <span>Add to Campaign</span>
+                            <i class="fas fa-plus-circle"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Related Contacts Card -->
+            {% if contact.company %}
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">Same Company</h2>
+                    
+                    <div class="space-y-2">
+                        {% if company_contacts %}
+                            {% for related in company_contacts %}
+                            {% if related.pk != contact.pk %}
+                            <a href="{% url 'message_system:contact_detail' related.pk %}" 
+                               class="flex items-center p-2 rounded hover:bg-gray-50">
+                                <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                    <span class="text-blue-600 font-medium text-sm">
+                                        {{ related.email|first|upper }}
+                                    </span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 truncate">
+                                        {% if related.get_full_name %}{{ related.get_full_name }}{% else %}{{ related.email }}{% endif %}
+                                    </p>
+                                    <p class="text-sm text-gray-500 truncate">{{ related.email }}</p>
+                                </div>
+                                <div class="ml-2">
+                                    <span class="px-1.5 py-0.5 text-xs rounded-full 
+                                        {% if related.status == 'subscribed' %}bg-green-100 text-green-800
+                                        {% elif related.status == 'unsubscribed' %}bg-gray-100 text-gray-800
+                                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                        {{ related.status|slice:":3" }}
+                                    </span>
+                                </div>
+                            </a>
+                            {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-sm text-gray-500 text-center py-2">No other contacts from this company</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Contact Status History Card -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">Status History</h2>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Current Status:</span>
+                            <span class="text-sm font-medium">
+                                {{ contact.get_status_display }}
+                                {% if contact.status == 'subscribed' and not contact.is_active %}
+                                <span class="text-yellow-600">(Inactive)</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Subscribed Since:</span>
+                            <span class="text-sm">{{ contact.subscribed_at|date:"M d, Y" }}</span>
+                        </div>
+                        
+                        {% if contact.unsubscribed_at %}
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Unsubscribed On:</span>
+                            <span class="text-sm">{{ contact.unsubscribed_at|date:"M d, Y" }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if contact.last_contacted_at %}
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Last Contacted:</span>
+                            <span class="text-sm">{{ contact.last_contacted_at|date:"M d, Y" }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirm destructive actions
+    const deleteButtons = document.querySelectorAll('a[href*="delete"]');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to delete this contact? This action cannot be undone.')) {
+                e.preventDefault();
+            }
+        });
+    });
+    
+    // Update status badge color based on is_active
+    const statusBadge = document.querySelector('.status-badge');
+    if (statusBadge) {
+        const status = '{{ contact.status }}';
+        const isActive = {% if contact.is_active %}true{% else %}false{% endif %};
+        
+        if (status === 'subscribed' && !isActive) {
+            statusBadge.classList.remove('bg-green-100', 'text-green-800');
+            statusBadge.classList.add('bg-yellow-100', 'text-yellow-800');
+        }
+    }
+});
+</script>
+{% endblock %}

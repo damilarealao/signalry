@@ -18,7 +18,7 @@
         </div>
         
         <!-- Stats -->
-        <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-5 gap-4">
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="flex items-center">
                     <div class="p-2 bg-blue-100 rounded-lg mr-4">
@@ -66,6 +66,31 @@
                     </div>
                 </div>
             </div>
+            
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg mr-4">
+                        <i class="fas fa-envelope text-purple-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Total Emails</p>
+                        <p class="text-2xl font-bold text-gray-900">
+                            {% with total_emails=0 %}
+                                {% for campaign in campaigns %}
+                                    {% with message=campaign.messages.first %}
+                                        {% if message %}
+                                            {% with count=message.get_recipient_count %}
+                                                {{ total_emails|add:count }}
+                                            {% endwith %}
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endfor %}
+                                {{ total_emails }}
+                            {% endwith %}
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- Plan Limit Warning -->
@@ -98,13 +123,16 @@
                             Campaign
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Email Content
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Status
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Schedule
+                            Recipients / Opens
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Created
+                            Schedule
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Actions
@@ -113,7 +141,11 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for campaign in campaigns %}
-                    <tr class="hover:bg-gray-50">
+                    {% with message=campaign.messages.first %}
+                    {% with total=message.get_recipient_count|default:0 sent=message.get_sent_count|default:0 %}
+                    {% with total_opens=message.opens.count|default:0 unique_opens=message.opens.values_list|length|default:0 %}
+                    <tr class="hover:bg-gray-50 campaign-row" data-campaign-id="{{ campaign.pk }}">
+                        <!-- Campaign Name -->
                         <td class="px-6 py-4">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -128,19 +160,133 @@
                                     <div class="text-sm text-gray-500">
                                         ID: {{ campaign.pk }}
                                     </div>
+                                    <div class="text-xs text-gray-400 mt-1">
+                                        Created {{ campaign.created_at|timesince }} ago
+                                    </div>
                                 </div>
                             </div>
                         </td>
+                        
+                        <!-- Email Content Preview -->
+                        <td class="px-6 py-4">
+                            {% if message %}
+                                <div class="max-w-xs">
+                                    <div class="text-sm font-medium text-gray-900 truncate" title="{{ message.subject }}">
+                                        {{ message.subject|default:"No subject" }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 truncate mt-1" title="{{ message.body_plain|truncatechars:100 }}">
+                                        {{ message.body_plain|truncatechars:50|default:"No content" }}
+                                    </div>
+                                    {% if message.uuid %}
+                                    <div class="text-xs text-gray-400 mt-1">
+                                        <i class="fas fa-chart-line mr-1"></i> Tracking: {{ total_opens }} opens
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-gray-400 text-sm">No email content</span>
+                                <div class="mt-1">
+                                    <a href="{% url 'campaigns:edit' campaign.pk %}" class="text-xs text-blue-600 hover:text-blue-800">
+                                        Add content →
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Status -->
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            <span class="campaign-status px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
                                 {% if campaign.status == 'active' %}bg-green-100 text-green-800
                                 {% elif campaign.status == 'draft' %}bg-yellow-100 text-yellow-800
                                 {% elif campaign.status == 'paused' %}bg-orange-100 text-orange-800
-                                {% elif campaign.status == 'completed' %}bg-gray-100 text-gray-800
-                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {% elif campaign.status == 'completed' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
                                 {{ campaign.status|title }}
                             </span>
+                            
+                            <!-- Progress indicator for active/completed campaigns -->
+                            {% if campaign.status in 'active,completed' and message %}
+                                {% if total > 0 %}
+                                <div class="mt-2">
+                                    <!-- Sending Progress -->
+                                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                        <span>Sending</span>
+                                        <span>{% widthratio sent total 100 %}%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                        <div class="bg-green-600 h-1.5 rounded-full" 
+                                             style="width: {% widthratio sent total 100 %}%"></div>
+                                    </div>
+                                    
+                                    <!-- Open Rate (if emails have been sent) -->
+                                    {% if sent > 0 %}
+                                    <div class="flex justify-between text-xs text-gray-500 mt-2 mb-1">
+                                        <span>Open Rate</span>
+                                        <span>
+                                            {% if sent > 0 %}
+                                                {% widthratio unique_opens sent 100 %}%
+                                            {% else %}0%{% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                        <div class="bg-purple-600 h-1.5 rounded-full" 
+                                             style="width: {% if sent > 0 %}{% widthratio unique_opens sent 100 %}%{% else %}0%{% endif %}"></div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            {% endif %}
                         </td>
+                        
+                        <!-- Recipients & Opens -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if message %}
+                                <div class="space-y-2">
+                                    <!-- Recipient Stats -->
+                                    <div>
+                                        <div class="text-sm text-gray-900">
+                                            <i class="fas fa-users text-gray-400 mr-1"></i>
+                                            {{ total }} recipients
+                                        </div>
+                                        <div class="text-sm text-gray-500 pl-5">
+                                            {{ sent }} sent
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Open Stats (if any) -->
+                                    {% if total_opens > 0 %}
+                                    <div class="pt-2 border-t border-gray-100">
+                                        <div class="text-sm text-gray-900">
+                                            <i class="fas fa-chart-line text-purple-400 mr-1"></i>
+                                            {{ total_opens }} opens
+                                        </div>
+                                        <div class="text-sm text-gray-500 pl-5">
+                                            {{ unique_opens }} unique
+                                        </div>
+                                        {% if sent > 0 %}
+                                        <div class="text-xs text-purple-600 font-medium mt-1">
+                                            {% widthratio unique_opens sent 100 %}% open rate
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% elif sent > 0 %}
+                                    <div class="pt-2 border-t border-gray-100">
+                                        <div class="text-sm text-gray-400">
+                                            <i class="fas fa-eye-slash mr-1"></i>
+                                            No opens yet
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            Images may be blocked
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-gray-400 text-sm">—</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Schedule -->
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if campaign.scheduled_at %}
                             <div class="text-sm text-gray-900">
@@ -149,28 +295,52 @@
                             <div class="text-sm text-gray-500">
                                 {{ campaign.scheduled_at|time:"g:i A" }}
                             </div>
+                            {% if campaign.scheduled_at < now %}
+                                <div class="text-xs text-green-600">
+                                    <i class="fas fa-check-circle mr-1"></i> Ready
+                                </div>
+                            {% else %}
+                                <div class="text-xs text-orange-600">
+                                    <i class="fas fa-clock mr-1"></i> Scheduled
+                                </div>
+                            {% endif %}
                             {% else %}
                             <span class="text-gray-400 text-sm">—</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ campaign.created_at|date:"M d, Y" }}
-                            <div class="text-xs text-gray-400">
-                                {{ campaign.created_at|timesince }} ago
-                            </div>
-                        </td>
+                        
+                        <!-- Actions -->
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex space-x-2">
+                                <!-- View Analytics -->
+                                <a href="{% url 'campaigns:detail' campaign.pk %}" 
+                                   class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" 
+                                   title="View Analytics">
+                                    <i class="fas fa-chart-bar"></i>
+                                </a>
+                                
+                                <!-- Quick Send for draft/paused campaigns -->
+                                {% if campaign.status in 'draft,paused' and campaign.can_be_sent %}
+                                <form method="post" action="{% url 'campaigns:send_now' campaign.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-white px-2 py-1 rounded text-xs bg-green-600 hover:bg-green-700" 
+                                            title="Send Now">
+                                        <i class="fas fa-paper-plane mr-1"></i> Send
+                                    </button>
+                                </form>
+                                {% endif %}
+                                
                                 <!-- Toggle Status -->
                                 {% if campaign.status in 'draft,active,paused' %}
-                                <form method="post" action="{% url 'campaigns:toggle' campaign.pk %}" class="inline">
+                                <form method="post" action="{% url 'campaigns:toggle' campaign.pk %}" class="inline toggle-form">
                                     {% csrf_token %}
-                                    <button type="submit" class="text-blue-600 hover:text-blue-900" title="
-                                        {% if campaign.status == 'draft' %}Activate
-                                        {% elif campaign.status == 'active' %}Pause
-                                        {% elif campaign.status == 'paused' %}Resume
-                                        {% endif %}
-                                    ">
+                                    <input type="hidden" name="redirect_to" value="list">
+                                    <button type="submit" class="toggle-button text-white px-2 py-1 rounded text-xs 
+                                        {% if campaign.status == 'draft' %}bg-green-600 hover:bg-green-700
+                                        {% elif campaign.status == 'active' %}bg-orange-600 hover:bg-orange-700
+                                        {% elif campaign.status == 'paused' %}bg-green-600 hover:bg-green-700
+                                        {% endif %}"
+                                        title="{% if campaign.status == 'draft' %}Activate{% elif campaign.status == 'active' %}Pause{% elif campaign.status == 'paused' %}Resume{% endif %}">
                                         {% if campaign.status == 'draft' %}
                                         <i class="fas fa-play"></i>
                                         {% elif campaign.status == 'active' %}
@@ -185,13 +355,13 @@
                                 <!-- Duplicate -->
                                 <form method="post" action="{% url 'campaigns:duplicate' campaign.pk %}" class="inline">
                                     {% csrf_token %}
-                                    <button type="submit" class="text-indigo-600 hover:text-indigo-900" title="Duplicate">
+                                    <button type="submit" class="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50" title="Duplicate">
                                         <i class="fas fa-copy"></i>
                                     </button>
                                 </form>
                                 
                                 <!-- Edit -->
-                                <a href="{% url 'campaigns:edit' campaign.pk %}" class="text-green-600 hover:text-green-900" title="Edit">
+                                <a href="{% url 'campaigns:edit' campaign.pk %}" class="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 
@@ -199,17 +369,77 @@
                                 <form method="post" action="{% url 'campaigns:delete' campaign.pk %}" class="inline" 
                                       onsubmit="return confirm('Are you sure you want to delete this campaign?');">
                                     {% csrf_token %}
-                                    <button type="submit" class="text-red-600 hover:text-red-900" title="Delete">
+                                    <button type="submit" class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Delete">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
                             </div>
                         </td>
                     </tr>
+                    {% endwith %}
+                    {% endwith %}
+                    {% endwith %}
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 flex justify-between sm:hidden">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Previous
+                    </a>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Next
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-gray-700">
+                            Showing <span class="font-medium">{{ page_obj.start_index }}</span> to <span class="font-medium">{{ page_obj.end_index }}</span> of <span class="font-medium">{{ page_obj.paginator.count }}</span> campaigns
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Previous</span>
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                                    {{ num }}
+                                </span>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <a href="?page={{ num }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    {{ num }}
+                                </a>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Next</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
         {% else %}
         <!-- Empty State -->
         <div class="text-center py-12">
@@ -228,33 +458,284 @@
         {% endif %}
     </div>
     
-    <!-- Help Section -->
-    <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-3">
-            <i class="fas fa-info-circle text-blue-600 mr-2"></i> Campaign Guide
+    <!-- Analytics Overview (for campaigns with opens) -->
+    {% with campaigns_with_opens=campaigns|slice:":5" %}
+    {% if campaigns_with_opens %}
+    <div class="mt-8 bg-white border border-gray-200 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-chart-line text-green-600 mr-2"></i> Campaign Performance Overview
         </h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-white p-4 rounded-lg">
-                <h4 class="font-medium text-gray-900 mb-2">Draft Campaigns</h4>
+        
+        <div class="space-y-4">
+            {% for campaign in campaigns_with_opens %}
+                {% with message=campaign.messages.first %}
+                    {% if message and message.get_sent_count > 0 %}
+                        {% with total_opens=message.opens.count|default:0 unique_opens=message.opens.values_list|length|default:0 sent=message.get_sent_count %}
+                        <div class="border border-gray-100 rounded-lg p-4 hover:bg-gray-50">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center">
+                                    <div class="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                        <i class="fas fa-bullhorn text-blue-600 text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-900">{{ campaign.name }}</h4>
+                                        <p class="text-xs text-gray-500">{{ campaign.created_at|date:"M d, Y" }}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {% if sent > 0 %}
+                                            {% widthratio unique_opens sent 100 %}% open rate
+                                        {% else %}
+                                            0% open rate
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-xs text-gray-500">{{ unique_opens }} unique opens</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="flex-1">
+                                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                        <span>Open Rate</span>
+                                        <span>{% if sent > 0 %}{% widthratio unique_opens sent 100 %}%{% else %}0%{% endif %}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-green-600 h-2 rounded-full" 
+                                             style="width: {% if sent > 0 %}{% widthratio unique_opens sent 100 %}%{% else %}0%{% endif %}"></div>
+                                    </div>
+                                </div>
+                                <a href="{% url 'campaigns:detail' campaign.pk %}" class="text-xs text-blue-600 hover:text-blue-800 whitespace-nowrap">
+                                    View Details →
+                                </a>
+                            </div>
+                        </div>
+                        {% endwith %}
+                    {% endif %}
+                {% endwith %}
+            {% endfor %}
+        </div>
+        
+        <div class="mt-4 text-center">
+            <a href="#" class="text-sm text-gray-600 hover:text-gray-900">
+                <i class="fas fa-chart-bar mr-1"></i> View detailed analytics dashboard
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    <!-- Campaign Status Guide -->
+    <div class="mt-8 bg-white border border-gray-200 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-info-circle text-blue-600 mr-2"></i> Campaign Status Guide
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="p-4 border border-gray-200 rounded-lg">
+                <div class="flex items-center mb-2">
+                    <span class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
+                    <span class="font-medium text-gray-900">Draft</span>
+                </div>
                 <p class="text-sm text-gray-600">
-                    Drafts are not scheduled for sending. Use this status to prepare campaigns before activating them.
+                    Campaign is being prepared. Has email content and recipients. Can be activated or sent immediately.
                 </p>
             </div>
             
-            <div class="bg-white p-4 rounded-lg">
-                <h4 class="font-medium text-gray-900 mb-2">Active Campaigns</h4>
+            <div class="p-4 border border-gray-200 rounded-lg">
+                <div class="flex items-center mb-2">
+                    <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                    <span class="font-medium text-gray-900">Active</span>
+                </div>
                 <p class="text-sm text-gray-600">
-                    Active campaigns are scheduled for sending. They will be sent at the scheduled time.
+                    Campaign is currently sending emails. Can be paused or will complete when all emails are sent.
                 </p>
             </div>
             
-            <div class="bg-white p-4 rounded-lg">
-                <h4 class="font-medium text-gray-900 mb-2">Paused Campaigns</h4>
+            <div class="p-4 border border-gray-200 rounded-lg">
+                <div class="flex items-center mb-2">
+                    <span class="w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
+                    <span class="font-medium text-gray-900">Paused</span>
+                </div>
                 <p class="text-sm text-gray-600">
-                    Paused campaigns can be resumed later. They won't be sent until they're reactivated.
+                    Campaign is temporarily stopped. Can be resumed or sent immediately from current state.
+                </p>
+            </div>
+            
+            <div class="p-4 border border-gray-200 rounded-lg">
+                <div class="flex items-center mb-2">
+                    <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                    <span class="font-medium text-gray-900">Completed</span>
+                </div>
+                <p class="text-sm text-gray-600">
+                    All emails have been sent. Campaign cannot be modified further. Can be duplicated for reuse.
                 </p>
             </div>
         </div>
     </div>
+    
+    <!-- Quick Actions -->
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="{% url 'campaigns:create' %}" class="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+            <div class="flex items-center">
+                <div class="p-2 bg-blue-100 rounded-lg mr-4">
+                    <i class="fas fa-plus text-blue-600"></i>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900">Create Campaign</h4>
+                    <p class="text-sm text-gray-600 mt-1">Start a new email campaign from scratch</p>
+                </div>
+            </div>
+        </a>
+        
+        <a href="{% url 'message_system:contact_list' %}" class="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+            <div class="flex items-center">
+                <div class="p-2 bg-green-100 rounded-lg mr-4">
+                    <i class="fas fa-users text-green-600"></i>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900">Manage Contacts</h4>
+                    <p class="text-sm text-gray-600 mt-1">View and manage your email contacts</p>
+                </div>
+            </div>
+        </a>
+        
+        <a href="{% url 'smtp:list' %}" class="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+            <div class="flex items-center">
+                <div class="p-2 bg-purple-100 rounded-lg mr-4">
+                    <i class="fas fa-server text-purple-600"></i>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900">SMTP Settings</h4>
+                    <p class="text-sm text-gray-600 mt-1">Configure email sending servers</p>
+                </div>
+            </div>
+        </a>
+    </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add loading state to form buttons
+    const forms = document.querySelectorAll('form');
+    
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const button = this.querySelector('button[type="submit"]');
+            if (button) {
+                const originalText = button.innerHTML;
+                
+                // Add loading spinner for action buttons
+                if (button.innerHTML.includes('fa-paper-plane') || 
+                    button.innerHTML.includes('fa-play') || 
+                    button.innerHTML.includes('fa-pause') ||
+                    button.innerHTML.includes('fa-copy') ||
+                    button.innerHTML.includes('fa-trash')) {
+                    
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    button.disabled = true;
+                    
+                    // Restore after 5 seconds in case of error
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }, 5000);
+                }
+            }
+        });
+    });
+    
+    // Add confirmation for Send Now buttons
+    const sendNowButtons = document.querySelectorAll('form[action*="send_now"] button');
+    sendNowButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to send this campaign now? This will start sending emails immediately.')) {
+                e.preventDefault();
+            }
+        });
+    });
+    
+    // Add confirmation for Delete buttons
+    const deleteButtons = document.querySelectorAll('form[action*="delete"] button');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
+                e.preventDefault();
+            }
+        });
+    });
+    
+    // Auto-refresh for active campaigns
+    function refreshActiveCampaigns() {
+        // Find all rows with active campaigns
+        const activeRows = document.querySelectorAll('.campaign-status:contains("Active")');
+        
+        if (activeRows.length > 0) {
+            // Simple refresh - reload the page after 30 seconds if there are active campaigns
+            setTimeout(() => {
+                if (document.querySelector('.campaign-status:contains("Active")')) {
+                    window.location.reload();
+                }
+            }, 30000);
+        }
+    }
+    
+    // Initialize auto-refresh
+    refreshActiveCampaigns();
+    
+    // Add tooltips
+    const buttons = document.querySelectorAll('button[title], a[title]');
+    buttons.forEach(button => {
+        button.addEventListener('mouseenter', function(e) {
+            const title = this.getAttribute('title');
+            if (title) {
+                // Create tooltip
+                const tooltip = document.createElement('div');
+                tooltip.className = 'fixed z-50 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-90 pointer-events-none';
+                tooltip.textContent = title;
+                tooltip.style.top = (e.pageY - 30) + 'px';
+                tooltip.style.left = (e.pageX - tooltip.offsetWidth / 2) + 'px';
+                document.body.appendChild(tooltip);
+                this._tooltip = tooltip;
+            }
+        });
+        
+        button.addEventListener('mousemove', function(e) {
+            if (this._tooltip) {
+                this._tooltip.style.top = (e.pageY - 30) + 'px';
+                this._tooltip.style.left = (e.pageX - this._tooltip.offsetWidth / 2) + 'px';
+            }
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            if (this._tooltip) {
+                this._tooltip.remove();
+                this._tooltip = null;
+            }
+        });
+    });
+    
+    // Filter campaigns by status (optional feature)
+    const filterButtons = document.querySelectorAll('.status-filter');
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const status = this.getAttribute('data-status');
+            const rows = document.querySelectorAll('.campaign-row');
+            
+            rows.forEach(row => {
+                const rowStatus = row.querySelector('.campaign-status').textContent.trim().toLowerCase();
+                if (status === 'all' || rowStatus === status) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Update active filter
+            filterButtons.forEach(btn => btn.classList.remove('bg-blue-100', 'text-blue-800'));
+            this.classList.add('bg-blue-100', 'text-blue-800');
+        });
+    });
+});
+</script>
+{% endblock %}
 {% endblock %}

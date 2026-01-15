@@ -15,6 +15,9 @@
     <!-- CSRF Token for AJAX -->
     <meta name="csrf-token" content="{{ csrf_token }}">
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📧</text></svg>">
+    
     {% block extra_head %}{% endblock %}
     
     <style>
@@ -33,6 +36,26 @@
         .mobile-menu.open {
             max-height: 500px;
         }
+        /* Active navigation link */
+        .nav-link.active {
+            color: #2563eb;
+            font-weight: 600;
+            position: relative;
+        }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #2563eb;
+            border-radius: 2px;
+        }
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
@@ -42,7 +65,7 @@
             <div class="flex justify-between h-16">
                 <!-- Logo -->
                 <div class="flex items-center">
-                    <a href="{% url 'users:index' %}" class="flex items-center space-x-2">
+                    <a href="{% url 'users:index' %}" class="flex items-center space-x-2 hover-scale">
                         <div class="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center">
                             <i class="fas fa-paper-plane text-white text-sm"></i>
                         </div>
@@ -53,7 +76,10 @@
                 <!-- Mobile menu button -->
                 <div class="flex items-center md:hidden">
                     <button type="button" onclick="toggleMobileMenu()" 
-                            class="text-gray-600 hover:text-gray-900 focus:outline-none">
+                            class="text-gray-600 hover:text-gray-900 focus:outline-none p-2 rounded-md hover:bg-gray-100 transition-colors"
+                            aria-label="Toggle menu"
+                            aria-expanded="false"
+                            id="mobileMenuButton">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
                 </div>
@@ -62,102 +88,164 @@
                 <div class="hidden md:flex items-center space-x-6">
                     {% if user.is_authenticated %}
                         <!-- Dashboard -->
-                        <a href="{% url 'users:dashboard' %}" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <a href="{% url 'users:dashboard' %}" 
+                           class="nav-link text-gray-600 hover:text-blue-600 transition-colors {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                             <i class="fas fa-chart-line mr-1"></i> Dashboard
                         </a>
                         
-                        <!-- Campaigns (NEW) -->
-                        <a href="{% url 'campaigns:list' %}" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <!-- Campaigns -->
+                        <a href="{% url 'campaigns:list' %}" 
+                           class="nav-link text-gray-600 hover:text-blue-600 transition-colors {% if 'campaigns' in request.path %}active{% endif %}">
                             <i class="fas fa-bullhorn mr-1"></i> Campaigns
                         </a>
                         
+                        <!-- Contacts -->
+                        <a href="{% url 'message_system:contact_list' %}" 
+                           class="nav-link text-gray-600 hover:text-blue-600 transition-colors {% if 'contacts' in request.path %}active{% endif %}">
+                            <i class="fas fa-users mr-1"></i> Contacts
+                        </a>
+                        
                         <!-- SMTP -->
-                        <a href="{% url 'smtp:list' %}" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <a href="{% url 'smtp:list' %}" 
+                           class="nav-link text-gray-600 hover:text-blue-600 transition-colors {% if 'smtp' in request.path %}active{% endif %}">
                             <i class="fas fa-server mr-1"></i> SMTP
                         </a>
                         
-                        <!-- Profile -->
-                        <a href="{% url 'users:profile_edit' %}" class="text-gray-600 hover:text-blue-600 transition-colors">
-                            <i class="fas fa-user mr-1"></i> Profile
+                        <!-- Analytics -->
+                        <a href="#" 
+                           class="nav-link text-gray-600 hover:text-blue-600 transition-colors opacity-50 cursor-not-allowed" 
+                           title="Coming Soon">
+                            <i class="fas fa-chart-bar mr-1"></i> Analytics
                         </a>
                         
-                        <!-- User Info & Logout -->
-                        <div class="flex items-center space-x-3">
-                            <span class="text-gray-500 text-sm hidden lg:block">
-                                <i class="fas fa-user-circle mr-1"></i> {{ user.get_display_name }}
-                            </span>
-                            <a href="{% url 'users:logout' %}" class="bg-red-50 text-red-600 px-4 py-2 rounded-md text-sm hover:bg-red-100 transition-colors">
-                                <i class="fas fa-sign-out-alt mr-1"></i> Logout
-                            </a>
+                        <!-- User Dropdown -->
+                        <div class="relative group">
+                            <button class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 focus:outline-none transition-colors">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-blue-600"></i>
+                                </div>
+                                <span class="hidden lg:block text-sm">{{ user.get_display_name|default:user.email }}</span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            
+                            <!-- Dropdown Menu -->
+                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform -translate-y-2 group-hover:translate-y-0 z-10">
+                                <div class="py-1">
+                                    <div class="px-4 py-2 text-xs text-gray-500 border-b">
+                                        Signed in as
+                                        <div class="font-medium text-gray-900 truncate">{{ user.email }}</div>
+                                    </div>
+                                    <a href="{% url 'users:profile_edit' %}" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors">
+                                        <i class="fas fa-user-cog mr-2"></i> Profile Settings
+                                    </a>
+                                    <a href="#" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors opacity-50 cursor-not-allowed">
+                                        <i class="fas fa-bell mr-2"></i> Notifications
+                                    </a>
+                                    <a href="#" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors opacity-50 cursor-not-allowed">
+                                        <i class="fas fa-question-circle mr-2"></i> Help & Support
+                                    </a>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <a href="{% url 'users:logout' %}" 
+                                       class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors">
+                                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     {% else %}
                         <!-- Public Navigation -->
-                        <a href="{% url 'users:index' %}#features" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <a href="{% url 'users:index' %}#features" 
+                           class="text-gray-600 hover:text-blue-600 transition-colors scroll-link">
                             Features
                         </a>
-                        <a href="{% url 'users:index' %}#pricing" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <a href="{% url 'users:index' %}#pricing" 
+                           class="text-gray-600 hover:text-blue-600 transition-colors scroll-link">
                             Pricing
                         </a>
-                        <a href="{% url 'users:login' %}" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <a href="{% url 'users:index' %}#about" 
+                           class="text-gray-600 hover:text-blue-600 transition-colors scroll-link">
+                            About
+                        </a>
+                        <a href="{% url 'users:login' %}" 
+                           class="text-gray-600 hover:text-blue-600 transition-colors">
                             <i class="fas fa-sign-in-alt mr-1"></i> Login
                         </a>
-                        <a href="{% url 'users:register' %}" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-user-plus mr-1"></i> Sign Up
+                        <a href="{% url 'users:register' %}" 
+                           class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 hover-scale transition-all shadow-sm">
+                            <i class="fas fa-user-plus mr-1"></i> Sign Up Free
                         </a>
                     {% endif %}
                 </div>
             </div>
 
             <!-- Mobile Navigation Menu -->
-            <div id="mobileMenu" class="mobile-menu md:hidden bg-white border-t">
+            <div id="mobileMenu" class="mobile-menu md:hidden bg-white border-t border-gray-100">
                 <div class="px-2 pt-2 pb-3 space-y-1">
                     {% if user.is_authenticated %}
                         <!-- Mobile Menu for Authenticated Users -->
                         <a href="{% url 'users:dashboard' %}" 
-                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
+                           class="mobile-nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors {% if request.resolver_match.url_name == 'dashboard' %}active bg-blue-50 text-blue-700{% endif %}">
                             <i class="fas fa-chart-line mr-2"></i> Dashboard
                         </a>
                         
                         <a href="{% url 'campaigns:list' %}" 
-                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
+                           class="mobile-nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors {% if 'campaigns' in request.path %}active bg-blue-50 text-blue-700{% endif %}">
                             <i class="fas fa-bullhorn mr-2"></i> Campaigns
                         </a>
                         
+                        <!-- Contacts Mobile -->
+                        <a href="{% url 'message_system:contact_list' %}" 
+                           class="mobile-nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors {% if 'contacts' in request.path %}active bg-blue-50 text-blue-700{% endif %}">
+                            <i class="fas fa-users mr-2"></i> Contacts
+                        </a>
+                        
                         <a href="{% url 'smtp:list' %}" 
-                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
+                           class="mobile-nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors {% if 'smtp' in request.path %}active bg-blue-50 text-blue-700{% endif %}">
                             <i class="fas fa-server mr-2"></i> SMTP Accounts
                         </a>
                         
+                        <a href="#" 
+                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-400 cursor-not-allowed">
+                            <i class="fas fa-chart-bar mr-2"></i> Analytics (Coming Soon)
+                        </a>
+                        
                         <a href="{% url 'users:profile_edit' %}" 
-                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
+                           class="mobile-nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors {% if 'profile' in request.path %}active bg-blue-50 text-blue-700{% endif %}">
                             <i class="fas fa-user mr-2"></i> Profile
                         </a>
                         
-                        <div class="px-3 py-2 text-sm text-gray-500 border-t">
-                            <i class="fas fa-user-circle mr-2"></i> {{ user.get_display_name }}
+                        <div class="px-3 py-2 text-sm text-gray-500 border-t border-gray-100">
+                            <i class="fas fa-user-circle mr-2"></i> {{ user.get_display_name|default:user.email }}
                         </div>
                         
                         <a href="{% url 'users:logout' %}" 
-                           class="block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50">
+                           class="block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50 transition-colors">
                             <i class="fas fa-sign-out-alt mr-2"></i> Logout
                         </a>
                     {% else %}
                         <!-- Mobile Menu for Public Users -->
                         <a href="{% url 'users:index' %}#features" 
-                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
+                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors scroll-link">
                             Features
                         </a>
                         <a href="{% url 'users:index' %}#pricing" 
-                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
+                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors scroll-link">
                             Pricing
                         </a>
+                        <a href="{% url 'users:index' %}#about" 
+                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors scroll-link">
+                            About
+                        </a>
                         <a href="{% url 'users:login' %}" 
-                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
+                           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors">
                             <i class="fas fa-sign-in-alt mr-2"></i> Login
                         </a>
                         <a href="{% url 'users:register' %}" 
-                           class="block px-3 py-2 rounded-md text-base font-medium text-white bg-blue-600 hover:bg-blue-700">
-                            <i class="fas fa-user-plus mr-2"></i> Sign Up
+                           class="block px-3 py-2 rounded-md text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-user-plus mr-2"></i> Sign Up Free
                         </a>
                     {% endif %}
                 </div>
@@ -169,7 +257,7 @@
     {% if messages %}
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
             {% for message in messages %}
-                <div class="rounded-md p-4 mb-4 border-l-4 
+                <div class="rounded-md p-4 mb-4 border-l-4 shadow-sm 
                     {% if message.tags == 'success' %}bg-green-50 text-green-800 border-green-500
                     {% elif message.tags == 'error' %}bg-red-50 text-red-800 border-red-500
                     {% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-800 border-yellow-500
@@ -186,12 +274,13 @@
                                 <i class="fas fa-info-circle text-blue-500"></i>
                             {% endif %}
                         </div>
-                        <div class="ml-3">
+                        <div class="ml-3 flex-1">
                             <p class="font-medium">{{ message }}</p>
                         </div>
-                        <div class="ml-auto pl-3">
+                        <div class="ml-3">
                             <button onclick="this.parentElement.parentElement.style.display='none'" 
-                                    class="text-gray-400 hover:text-gray-600">
+                                    class="text-gray-400 hover:text-gray-600 focus:outline-none p-1 rounded-full hover:bg-gray-200 transition-colors"
+                                    aria-label="Dismiss message">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -222,40 +311,64 @@
                     <p class="text-gray-400">
                         Professional email marketing platform for businesses of all sizes.
                     </p>
+                    <div class="mt-4 flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors" title="Twitter">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors" title="GitHub">
+                            <i class="fab fa-github text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors" title="LinkedIn">
+                            <i class="fab fa-linkedin text-xl"></i>
+                        </a>
+                    </div>
                 </div>
                 
                 <div>
                     <h3 class="text-lg font-semibold mb-4">Product</h3>
                     <ul class="space-y-2 text-gray-400">
                         <li><a href="{% url 'campaigns:list' %}" class="hover:text-white transition-colors">Campaigns</a></li>
+                        <li><a href="{% url 'message_system:contact_list' %}" class="hover:text-white transition-colors">Contacts</a></li>
                         <li><a href="{% url 'smtp:list' %}" class="hover:text-white transition-colors">SMTP</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Analytics</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">API</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors opacity-50 cursor-not-allowed">Analytics (Coming Soon)</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Resources</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors opacity-50 cursor-not-allowed">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors opacity-50 cursor-not-allowed">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors opacity-50 cursor-not-allowed">API</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors opacity-50 cursor-not-allowed">Status</a></li>
                     </ul>
                 </div>
                 
                 <div>
                     <h3 class="text-lg font-semibold mb-4">Company</h3>
                     <ul class="space-y-2 text-gray-400">
-                        <li><a href="#" class="hover:text-white transition-colors">About</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
-                    </ul>
-                </div>
-                
-                <div>
-                    <h3 class="text-lg font-semibold mb-4">Legal</h3>
-                    <ul class="space-y-2 text-gray-400">
-                        <li><a href="#" class="hover:text-white transition-colors">Privacy</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Terms</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">GDPR</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors opacity-50 cursor-not-allowed">About</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors opacity-50 cursor-not-allowed">Careers</a></li>
+                        <li><a href="mailto:support@signalry.com" class="hover:text-white transition-colors">Contact Support</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors opacity-50 cursor-not-allowed">Press</a></li>
                     </ul>
                 </div>
             </div>
             
-            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400 text-sm">
-                <p>&copy; {% now "Y" %} Signalry. All rights reserved.</p>
-                <p class="mt-2">Professional email delivery for businesses</p>
+            <div class="border-t border-gray-700 mt-8 pt-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="text-center md:text-left mb-4 md:mb-0">
+                        <p class="text-gray-400 text-sm">&copy; {% now "Y" %} Signalry. All rights reserved.</p>
+                        <p class="text-gray-500 text-xs mt-1">Professional email delivery for businesses</p>
+                    </div>
+                    
+                    <div class="flex space-x-6 text-sm text-gray-400">
+                        <a href="#" class="hover:text-white transition-colors opacity-50 cursor-not-allowed">Privacy Policy</a>
+                        <a href="#" class="hover:text-white transition-colors opacity-50 cursor-not-allowed">Terms of Service</a>
+                        <a href="#" class="hover:text-white transition-colors opacity-50 cursor-not-allowed">Cookie Policy</a>
+                        <a href="#" class="hover:text-white transition-colors opacity-50 cursor-not-allowed">GDPR</a>
+                    </div>
+                </div>
             </div>
         </div>
     </footer>
@@ -265,16 +378,39 @@
         // Mobile menu toggle function
         function toggleMobileMenu() {
             const menu = document.getElementById('mobileMenu');
+            const button = document.getElementById('mobileMenuButton');
+            const isOpen = menu.classList.contains('open');
+            
             menu.classList.toggle('open');
+            button.setAttribute('aria-expanded', !isOpen);
+            
+            // Change icon
+            const icon = button.querySelector('i');
+            if (menu.classList.contains('open')) {
+                icon.className = 'fas fa-times text-xl';
+            } else {
+                icon.className = 'fas fa-bars text-xl';
+            }
         }
 
-        // Close mobile menu when clicking outside
+        // Close mobile menu when clicking outside or on a link
         document.addEventListener('click', function(event) {
             const menu = document.getElementById('mobileMenu');
-            const button = document.querySelector('[onclick="toggleMobileMenu()"]');
+            const button = document.getElementById('mobileMenuButton');
             
             if (!menu.contains(event.target) && !button.contains(event.target)) {
                 menu.classList.remove('open');
+                button.setAttribute('aria-expanded', 'false');
+                button.querySelector('i').className = 'fas fa-bars text-xl';
+            }
+            
+            // Close menu when clicking a mobile nav link
+            if (event.target.classList.contains('mobile-nav-link')) {
+                setTimeout(() => {
+                    menu.classList.remove('open');
+                    button.setAttribute('aria-expanded', 'false');
+                    button.querySelector('i').className = 'fas fa-bars text-xl';
+                }, 300);
             }
         });
 
@@ -283,14 +419,89 @@
             const messages = document.querySelectorAll('.rounded-md.p-4.mb-4');
             messages.forEach(function(message) {
                 setTimeout(function() {
-                    message.style.transition = 'opacity 0.5s ease';
+                    message.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
                     message.style.opacity = '0';
+                    message.style.transform = 'translateY(-10px)';
                     setTimeout(function() {
                         if (message.parentNode) {
                             message.parentNode.removeChild(message);
                         }
                     }, 500);
                 }, 5000);
+            });
+            
+            // Add smooth scrolling for anchor links
+            document.querySelectorAll('a.scroll-link').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    const href = this.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        e.preventDefault();
+                        const targetId = href.substring(1);
+                        const targetElement = document.getElementById(targetId);
+                        if (targetElement) {
+                            window.scrollTo({
+                                top: targetElement.offsetTop - 80,
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                });
+            });
+            
+            // Update active nav link on scroll
+            function updateActiveNavLink() {
+                const sections = document.querySelectorAll('section[id]');
+                const scrollPosition = window.scrollY + 100;
+                
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    const sectionId = section.getAttribute('id');
+                    
+                    if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
+                        document.querySelectorAll('a.scroll-link').forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${sectionId}`) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Only run scroll detection on index page
+            if (window.location.pathname === '/' || window.location.pathname === '/index') {
+                window.addEventListener('scroll', updateActiveNavLink);
+            }
+            
+            // Initialize tooltips
+            document.querySelectorAll('[title]').forEach(element => {
+                element.addEventListener('mouseenter', function(e) {
+                    const title = this.getAttribute('title');
+                    if (title) {
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'fixed z-50 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-90 pointer-events-none';
+                        tooltip.textContent = title;
+                        tooltip.style.top = (e.pageY - 30) + 'px';
+                        tooltip.style.left = (e.pageX - tooltip.offsetWidth / 2) + 'px';
+                        document.body.appendChild(tooltip);
+                        this._tooltip = tooltip;
+                    }
+                });
+                
+                element.addEventListener('mousemove', function(e) {
+                    if (this._tooltip) {
+                        this._tooltip.style.top = (e.pageY - 30) + 'px';
+                        this._tooltip.style.left = (e.pageX - this._tooltip.offsetWidth / 2) + 'px';
+                    }
+                });
+                
+                element.addEventListener('mouseleave', function() {
+                    if (this._tooltip) {
+                        this._tooltip.remove();
+                        this._tooltip = null;
+                    }
+                });
             });
         });
     </script>

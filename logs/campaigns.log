@@ -1,0 +1,31 @@
+INFO 2026-01-15 08:25:49,735 tasks Sent to damilarealao29@gmail.com
+INFO 2026-01-15 08:25:52,171 tasks Sent to drey2525@yahoo.com
+INFO 2026-01-15 08:25:52,383 tasks Campaign 10: Sent 2, Failed 0
+INFO 2026-01-15 08:55:25,924 tasks Sent to damilarealao29@gmail.com
+INFO 2026-01-15 08:55:28,792 tasks Sent to drey2525@yahoo.com
+INFO 2026-01-15 08:55:29,001 tasks Campaign 12: Sent 2, Failed 0
+INFO 2026-01-15 09:30:47,076 tasks Using SITE_URL for unsubscribe links: http://100.75.59.136:8000
+INFO 2026-01-15 09:30:50,053 tasks Sent to damilarealao29@gmail.com
+INFO 2026-01-15 09:30:50,060 tasks Using SITE_URL for unsubscribe links: http://100.75.59.136:8000
+INFO 2026-01-15 09:30:52,818 tasks Sent to drey2525@yahoo.com
+INFO 2026-01-15 09:30:52,902 tasks Campaign 13: Sent 2, Failed 0
+INFO 2026-01-15 10:14:46,035 tasks Using SITE_URL for unsubscribe links: http://192.168.190.171:8000
+INFO 2026-01-15 10:14:49,382 tasks Sent to damilarealao29@gmail.com
+INFO 2026-01-15 10:14:49,384 tasks Using SITE_URL for unsubscribe links: http://192.168.190.171:8000
+INFO 2026-01-15 10:14:52,257 tasks Sent to drey2525@yahoo.com
+INFO 2026-01-15 10:14:52,323 tasks Campaign 14: Sent 2, Failed 0
+INFO 2026-01-15 10:51:34,411 tasks Using SITE_URL: http://192.168.190.171:8000
+INFO 2026-01-15 10:51:34,411 tasks Tracking pixel URL for recipient 9: http://192.168.190.171:8000/api/messages/t/5ecb9788-15c3-48fb-a310-a27c7088a1fd.png?recipient=9
+INFO 2026-01-15 10:51:42,090 tasks Sent to drey2525@yahoo.com
+INFO 2026-01-15 10:51:42,454 tasks Campaign 16: Sent 1, Failed 0
+INFO 2026-01-15 10:58:34,290 tasks Using SITE_URL: http://192.168.190.171:8000
+INFO 2026-01-15 10:58:34,290 tasks Tracking pixel URL for recipient 10: http://192.168.190.171:8000/api/messages/t/b40169a1-58fe-4983-86a4-d1a3216a9573.png?recipient=10
+INFO 2026-01-15 10:58:39,289 tasks Sent to drey2525@yahoo.com
+INFO 2026-01-15 10:58:39,369 tasks Campaign 17: Sent 1, Failed 0
+INFO 2026-01-15 11:56:16,549 tasks Using SITE_URL: http://192.168.190.171:8000
+INFO 2026-01-15 11:56:16,549 tasks Tracking pixel URL for recipient 11: http://192.168.190.171:8000/api/messages/t/1a621e1b-1b2a-4982-9cc9-008f91e6b685.png?recipient=11
+INFO 2026-01-15 11:56:19,691 tasks Sent to damilarealao29@gmail.com
+INFO 2026-01-15 11:56:19,693 tasks Using SITE_URL: http://192.168.190.171:8000
+INFO 2026-01-15 11:56:19,693 tasks Tracking pixel URL for recipient 12: http://192.168.190.171:8000/api/messages/t/1a621e1b-1b2a-4982-9cc9-008f91e6b685.png?recipient=12
+INFO 2026-01-15 11:56:22,367 tasks Sent to drey2525@yahoo.com
+INFO 2026-01-15 11:56:22,639 tasks Campaign 19: Sent 2, Failed 0
